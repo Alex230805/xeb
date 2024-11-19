@@ -1,10 +1,15 @@
 
-
 all: xeb main
 
-xeb:
-	gcc -Wall -Werror -L./bin -I./lib -c -o bin/xeb.o ./lib/xeb.c
+xeb: toolbox lxer
+	cc -Wall -L ./bin/ -Ilib/ -llxer.o -ltoolbox.o -c -o bin/xeb.o ./lib/xeb.c
 
+lxer: 
+	cc -Wall -L ./bin/ -I ./lib/ -c -o bin/lxer.a ./lib/lxer.c
+
+toolbox:
+	cc -Wall -c -o bin/toolbox.o ./lib/toolbox.c
 
 main:
-	gcc -Wall -Werror -L./bin -I./lib ./main.c -o xeb
+	cc -Wall -Werror -Lbin/ -Ilib/ -lxeb.o -ltoolbox.o  ./main.c -o xeb
+

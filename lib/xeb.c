@@ -2,37 +2,18 @@
 #include "xeb.h"
 
 
-
-// check for namespace, remove comment's and check for macro
-void xeb_preprocessor(){
-
-
+void xeb_lexer(){
+  lxer_load_alphabet(
+    *symbols, SYM_COUNT, 
+    *keywords, KWD_COUNT,
+    *definitions, DEF_COUNT,
+    *types, TYP_COUNT,
+    *comments, CMT_COUNT,
+    *operators, OPR_COUNT,
+    *separators, SPR_COUNT
+  );
 }
 
-
-// check the sintax, check return type for function
-void xeb_compiler(){
-
-
+void xeb_compiler(String_builder*path,String_builder*output_path){
+  
 }
-
-// the lexer use the output from the compiler to analize and create an intepreded version of the line
-void xeb_lexer(xeb_lexer_container){
-
-
-}
-
-// compose the final lexer output
-void xeb_composer(){
-
-
-}
-
-// use the output from the composer and translate the lexer into binary stream, then it compile
-void xeb_binary_builder(){
-
-
-}
-
-
-

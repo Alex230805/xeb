@@ -4,77 +4,162 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
 
 #define TYPE void
 
 #include "Array.h"
+#include "lxer.h"
+#include "toolbox.h"
+
+typedef enum {
+  RETURN_ARROW,
+  OPEN_PAR,
+  CLOSE_PAR,
+  OPEN_GRAPH,
+  CLOSE_GRAPH,
+  OPEN_QUAD,
+  CLOSE_QUAD,
+  DOUBLE_COLON,
+  ASSIGNMENT,
+
+  SYM_COUNT,
+}SYM;
 
 
-// instruction list
+typedef enum {
+  FUNCTION,
+  DEFINITION,
+  SYSTEM,
+  MODULE,
 
-#define XEB_INST_LIST() \
-  X(some_instruction)
-
-
-// xeb variable type and return type
-
-#define XEB_TYPE()\
-  X(let)\
-  X(u8)\
-  X(u16)\
-  X(u32)\
-  X(db)\
-  X(fl)\
-  X(str)
-
-#define X(name) name,
-
-typedef enum{
-  XEB_INST_LIST()
-}xeb_keyword;
+  DEF_COUNT
+}DEF;
 
 
-typedef enum{
-  XEB_TYPE()
-}xeb_type;
+typedef enum {
+  VOID,
+  LET,
+  CONST,
+  UINT8,
+  UINT16,
+  UINT32,
+  UINT64,
+  DOUBLE,
+  FLOAT,
+  STRING,
 
-#undef X
+  TYP_COUNT
+}TYP;
 
-typedef struct{
-  char* String;
-  int len;
-}String_builder;
+typedef enum {
+  PLUS,
+  MINUS,
+  MULTIPLICATION,
+  DIVISION,
+  AND,
+  OR,
+  EQUAL,
+  DIFFERENT,
+  GREATER,
+  MINOR,
+  INC_GREATER,
+  INC_MINOR,
+
+  OPR_COUNT
+}OPR;
+
+typedef enum {
+  DOUBLE_DASH,
+
+  CMT_COUNT
+}CMT;
+
+typedef enum {
+  COMMA,
+  SEMICOLON,
+
+  SPR_COUNT
+}SPR;
+
+typedef enum {
+  IF,
+  ELSE,
+  FOR,
+  RETURN,
+  RET,
+
+  KWD_COUNT
+}KWD;
+
+static char *symbols[SYM_COUNT] = {
+  [RETURN_ARROW]       = "->",
+  [OPEN_PAR]          = "(",
+  [CLOSE_PAR]         = ")",
+  [OPEN_GRAPH]        = "{",
+  [CLOSE_GRAPH]       = "}",
+  [OPEN_QUAD]         = "[",
+  [CLOSE_QUAD]        = "]",
+  [DOUBLE_COLON]      = "::",
+  [ASSIGNMENT]        = "="
+};
+
+static char *keywords[KWD_COUNT] = {
+  [IF]                = "if",
+  [ELSE]              = "else",
+  [RETURN]            = "return",
+  [RET]               = "ret"
+};
+
+static char *definitions[DEF_COUNT] = {
+  [FUNCTION]          = "fn",
+  [DEFINITION]        = "def",
+  [SYSTEM]            = "@system",
+  [MODULE]            = "module",
+};
+
+static char *types[TYP_COUNT] = {
+  [VOID]              = "void",
+  [LET]               = "let",
+  [CONST]             = "const",
+  [UINT8]             = "u8",
+  [UINT16]            = "u16",
+  [UINT32]            = "u32",
+  [UINT64]            = "u64",
+  [DOUBLE]            = "db",
+  [FLOAT]             = "fl",
+  [STRING]            = "str"
+};
 
 
-// the idea is that the lexer can read a block of memory passed by argument where there is a description of what 
-// he need to do for an instruction. Given the type and the information about the line parsed it construct the 
-// machine language to match the purpose of the line.
-// xeb_lexer_container is used to understand what the parser analize.
+static char *operators[OPR_COUNT] = {
+  [PLUS]              = "+",
+  [MINUS]             = "-",
+  [MULTIPLICATION]    = "*",
+  [DIVISION]          = "/",
+  [AND]               = "&&",
+  [OR]                = "||",
+  [EQUAL]             = "==",
+  [DIFFERENT]         = "!=",
+  [GREATER]           = ">",
+  [MINOR]             = "<",
+  [INC_GREATER]       = ">=",
+  [INC_MINOR]         = "<="
+};
 
-typedef struct{
+static char *comments[CMT_COUNT] = {
+  [DOUBLE_DASH]       = "--"
+};
 
-  xeb_keyword       function;
-  xeb_type          type;
-  xeb_type          return_type;
-  Array             *arg_list;
-  Array             *string_args; // String_builder type
+static char *separators[SPR_COUNT] = {
+  [COMMA]             = ",",
+  [SEMICOLON]         = ";",
+};
 
-}xeb_lexer_container;
-
-// store namespace for function reference
-
-Array* namespace;
-
-#define xeb_start()\
-  array_new(namespace);\
-  xeb_preprocessor();\
-  xeb_compiler();
-
-
-void xeb_preprocessor();      // check for namespace, remove comment's and check for macro
-void xeb_compiler();          // check the sintax, check return type for function
-void xeb_lexer();             // the lexer use the output from the compiler to analize and create an intepreded version of the line
-void xeb_composer();          // compose the final lexer output
+void xeb_lexer();
+void xeb_compiler(String_builder*path,String_builder*output_path);          // check the sintax, check return type for function
+//void xeb_composer();          // compose the final lexer output
 void xeb_binary_builder();    // use the output from the composer and translate the lexer into binary stream, then it compile
 
 
