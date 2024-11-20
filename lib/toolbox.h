@@ -10,13 +10,16 @@
     ret_ptr = (cast)malloc(args);\
     push_address(&general_gc, (void*)ret_ptr);
 
+#define UNUSED(x) (void)(x);
+#define TODO(string) printf("Function or operation under development: "string"\n");
+#define FATAL() printf("Operation not permitted\n"); exit(1);
 
 
 #define POOL_SIZE 1024
 
 typedef struct{
   char* string;
-  int len;
+  size_t len;
 }String_builder;
 
 

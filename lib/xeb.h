@@ -93,7 +93,7 @@ typedef enum {
   KWD_COUNT
 }KWD;
 
-char *symbols[SYM_COUNT] = {
+static char *symbols[SYM_COUNT] = {
   [RETURN_ARROW]       = "->",
   [OPEN_PAR]          = "(",
   [CLOSE_PAR]         = ")",
@@ -105,21 +105,21 @@ char *symbols[SYM_COUNT] = {
   [ASSIGNMENT]        = "="
 };
 
-char *keywords[KWD_COUNT] = {
+static char *keywords[KWD_COUNT] = {
   [IF]                = "if",
   [ELSE]              = "else",
   [RETURN]            = "return",
   [RET]               = "ret"
 };
 
-char *definitions[DEF_COUNT] = {
+static char *definitions[DEF_COUNT] = {
   [FUNCTION]          = "fn",
   [DEFINITION]        = "def",
   [SYSTEM]            = "@system",
   [MODULE]            = "module",
 };
 
-char *types[TYP_COUNT] = {
+static char *types[TYP_COUNT] = {
   [VOID]              = "void",
   [LET]               = "let",
   [CONST]             = "const",
@@ -133,7 +133,7 @@ char *types[TYP_COUNT] = {
 };
 
 
-char *operators[OPR_COUNT] = {
+static char *operators[OPR_COUNT] = {
   [PLUS]              = "+",
   [MINUS]             = "-",
   [MULTIPLICATION]    = "*",
@@ -148,16 +148,16 @@ char *operators[OPR_COUNT] = {
   [INC_MINOR]         = "<="
 };
 
-char *comments[CMT_COUNT] = {
+static char *comments[CMT_COUNT] = {
   [DOUBLE_DASH]       = "--"
 };
 
-char *separators[SPR_COUNT] = {
+static char *separators[SPR_COUNT] = {
   [COMMA]             = ",",
   [SEMICOLON]         = ";",
 };
 
-void xeb_lexer();
+void xeb_lexer(String_builder*path);
 void xeb_compiler(String_builder*path,String_builder*output_path);          // check the sintax, check return type for function
 //void xeb_composer();          // compose the final lexer output
 void xeb_binary_builder();    // use the output from the composer and translate the lexer into binary stream, then it compile

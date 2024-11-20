@@ -128,11 +128,13 @@ int lxer_load_alphabet( char *symbols, size_t symbols_length,
 
 
 
-String_builder lxer_read_entire_file(const char* filepath){
+void lxer_read_entire_file(const char* filepath){
   FILE* fp;
 
-  String_builder sb;
-  if((fp = fopen(filepath, "+r")) == NULL){
+  String_builder *sb = NULL;
+  MALLOC(sizeof(String_builder), sb, String_builder*);
+
+  if((fp = fopen(filepath, "r")) == NULL){
     lxer_noty_error("Unable to open file path due to: ");
     fprintf(stderr, "%s", strerror(errno));
     exit(1);
@@ -141,12 +143,56 @@ String_builder lxer_read_entire_file(const char* filepath){
   long len = ftell(fp);
   fseek(fp, 0, SEEK_SET);
 
-  MALLOC(sizeof(char)*len, sb.string, char*);
-  sb.len = len;
-  memcpy(sb.string, fp, len);
+  MALLOC(sizeof(char)*len+1, sb->string, char*);
+  sb->len = len;
+  fread(&sb->string[0], 1, len+1, fp);
+  sb->string[len] = '\0';
   fclose(fp);
+  l.file_word = sb;
+}
+
+char lxer_get_token(){
+  char c;
+  while(l.file_word->string[l.current_pointer] != '\0' && l.file_word->string[l.current_pointer] == ' ' &&  l.current_pointer < l.file_word->len){
+    l.current_pointer += 1;
+  }
+  c = l.file_word->string[l.current_pointer];
+  l.current_pointer+=1;
+  return c;
+}
+
+String_builder* lxer_get_phrase(){
+  size_t i = 0;
+  String_builder* sb = NULL;
+  bool started = false;
+  bool end = false;
+
+  MALLOC(sizeof(String_builder), sb, String_builder*);
+  while(l.file_word->string[l.current_pointer+i] != '\0' && l.current_pointer+i < l.file_word->len && !end){
+    if(l.file_word->string[l.current_pointer+i] == ' '){
+      l.current_pointer+=1;
+      if(started) end = true;
+    }else{
+      i+=1;
+      started = true;
+    }
+  }
+  MALLOC(sizeof(char)*i+2,sb->string, char*);
+  sb->len = i+2;
+  memcpy(&l.file_word->string[l.current_pointer], sb->string, i+1);
+  sb->string[i+1] = '\0';
+
+  l.current_pointer += i+1;
 
   return sb;
+}
+
+
+bool lxer_eof(){
+  if(l.file_word->string[l.current_pointer] == '\0'){
+    return true;
+  }
+  return false;
 }
 
 

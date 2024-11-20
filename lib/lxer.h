@@ -8,10 +8,7 @@
 #include <errno.h>
 #include <string.h>
 #include <toolbox.h>
-
-#define TODO(string) printf("Function or operation under development: "string"\n");
-#define FATAL() printf("Operation not permitted\n"); exit(1);
-
+#include <stdbool.h>
 
 typedef struct{
   char *symbols;
@@ -36,6 +33,7 @@ typedef struct{
   size_t separators_length;
 
   String_builder *file_word;
+  size_t current_pointer;
 
 }lxer;
 
@@ -69,7 +67,11 @@ void lxer_noty_printf(const char*str);
 
 // file loading
 
-String_builder lxer_read_and_separate(const char* filepath);
+void lxer_read_entire_file(const char* filepath);
+char lxer_get_token();
+String_builder* lxer_get_phrase();
+bool lxer_eof();
+
 
 #ifndef LXER_IMPLEMENTATION
 #define LXER_IMPLEMENTATION

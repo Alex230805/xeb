@@ -12,8 +12,8 @@ void print_helper(){
   printf("\t\tcompile a simple file: xeb [filename].x\n");
   printf("\t\tspecify output path:   xeb -o /my/path/file.name [filename].x\n\n");
   printf("\nLIST OF FLAGS:\n\n");
-  printf("-h or --help: get helper\n");
-  printf("-o or --output: specify output name\n");
+  printf("\t-h or --help: get helper\n");
+  printf("\t-o or --output: specify output name\n");
 }
 
 int main(int argc, char** argv){
