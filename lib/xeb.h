@@ -5,13 +5,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <lxer.h>
+#include <toolbox.h>
 
 
 #define TYPE void
 
 #include "Array.h"
-#include "lxer.h"
-#include "toolbox.h"
 
 typedef enum {
   RETURN_ARROW,
@@ -93,7 +93,7 @@ typedef enum {
   KWD_COUNT
 }KWD;
 
-static char *symbols[SYM_COUNT] = {
+char *symbols[SYM_COUNT] = {
   [RETURN_ARROW]       = "->",
   [OPEN_PAR]          = "(",
   [CLOSE_PAR]         = ")",
@@ -105,21 +105,21 @@ static char *symbols[SYM_COUNT] = {
   [ASSIGNMENT]        = "="
 };
 
-static char *keywords[KWD_COUNT] = {
+char *keywords[KWD_COUNT] = {
   [IF]                = "if",
   [ELSE]              = "else",
   [RETURN]            = "return",
   [RET]               = "ret"
 };
 
-static char *definitions[DEF_COUNT] = {
+char *definitions[DEF_COUNT] = {
   [FUNCTION]          = "fn",
   [DEFINITION]        = "def",
   [SYSTEM]            = "@system",
   [MODULE]            = "module",
 };
 
-static char *types[TYP_COUNT] = {
+char *types[TYP_COUNT] = {
   [VOID]              = "void",
   [LET]               = "let",
   [CONST]             = "const",
@@ -133,7 +133,7 @@ static char *types[TYP_COUNT] = {
 };
 
 
-static char *operators[OPR_COUNT] = {
+char *operators[OPR_COUNT] = {
   [PLUS]              = "+",
   [MINUS]             = "-",
   [MULTIPLICATION]    = "*",
@@ -148,11 +148,11 @@ static char *operators[OPR_COUNT] = {
   [INC_MINOR]         = "<="
 };
 
-static char *comments[CMT_COUNT] = {
+char *comments[CMT_COUNT] = {
   [DOUBLE_DASH]       = "--"
 };
 
-static char *separators[SPR_COUNT] = {
+char *separators[SPR_COUNT] = {
   [COMMA]             = ",",
   [SEMICOLON]         = ";",
 };

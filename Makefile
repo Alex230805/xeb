@@ -1,22 +1,25 @@
+FLAG=-Wall -Wextra -Werror
+INCLUDE_DIR=-I lib/
+LIB_DIR=-I bin/
 
 all: xeb main
-	rm bin/*.o
 
 xeb: toolbox lxer
-	cc -Wall -L ./bin -I./lib -l lxer.a -l toolbox.a -c -o bin/xeb.o ./lib/xeb.c
-	ar rc bin/xeb.a bin/xeb.o
-	ranlib bin/xeb.a
+	gcc $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) -llxer -c -o bin/xeb.o ./lib/xeb.c
+	ar rc bin/libxeb.a bin/xeb.o
+	ranlib bin/libxeb.a
 
 lxer: 
-	cc -Wall -L ./bin -I ./lib -c -o bin/lxer.o ./lib/lxer.c
-	ar rc bin/lxer.a bin/lxer.o
-	ranlib bin/lxer.a
+	gcc $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) -c -o bin/lxer.o ./lib/lxer.c
+	ar rc bin/liblxer.a bin/lxer.o
+	ranlib bin/liblxer.a
 
 toolbox:
-	cc -Wall -c -o bin/toolbox.o ./lib/toolbox.c
-	ar rc bin/toolbox.a bin/toolbox.o
-	ranlib bin/toolbox.a
+	gcc $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) -c -o bin/toolbox.o lib/toolbox.c
+	ar rc bin/libtoolbox.a bin/toolbox.o
+	ranlib bin/libtoolbox.a
 
 main:
-	cc -Wall -Werror -L./bin -I./lib -l xeb.a -l toolbox.a  ./main.c -o xebc
+	gcc $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) -lxeb -ltoolbox ./main.c -o xebc
+
 

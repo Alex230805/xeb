@@ -2,7 +2,6 @@
 
 #include "lxer.h"
 
-
 void lxer_noty_error(const char*str){
   fprintf(stderr,"[ERROR]: %s", str);
 }

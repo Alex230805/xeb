@@ -4,7 +4,6 @@
 #include "xeb.h"
 #include "toolbox.h"
 
-
 tb_gc general_gc = {0};
 
 void print_helper(){
