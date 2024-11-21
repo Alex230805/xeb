@@ -54,9 +54,11 @@ int main(int argc, char** argv){
       }
       i+=1;
     }
+    if(xeb_compiler(&filename, &output_path) == -1){
+      printf("File format not supported, you must use the '*.x' extension\n");
+      return 1;
+    }
   }
-  xeb_compiler(&filename, &output_path);
-
   free_trash(&general_gc);
   return 0;
 }

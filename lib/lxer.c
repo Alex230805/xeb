@@ -17,7 +17,7 @@ void lxer_noty_printf(const char*str){
 // loading process 
 
 
-int lxer_load_symb(char *symbols, size_t symbols_length){
+int lxer_load_symb(char **symbols, size_t symbols_length){
  if(symbols == NULL || symbols_length < 1){
     lxer_noty_error("Symbols pointer is null or no element in the array\n");
     return 1;
@@ -29,7 +29,7 @@ int lxer_load_symb(char *symbols, size_t symbols_length){
 
 }
 
-int lxer_load_keyw(char *keywords, size_t keywords_length){
+int lxer_load_keyw(char **keywords, size_t keywords_length){
  if(keywords == NULL || keywords_length < 1){
     lxer_noty_error("Symbols pointer is null or no element in the array\n");
     return 1;
@@ -41,7 +41,7 @@ int lxer_load_keyw(char *keywords, size_t keywords_length){
 }
 
 
-int lxer_load_definitions(char *definitions, size_t definitions_length){
+int lxer_load_definitions(char **definitions, size_t definitions_length){
   if(definitions == NULL || definitions_length < 1){
     lxer_noty_error("Definitions pointer is null or no element in the array\n");
     return 1;
@@ -53,7 +53,7 @@ int lxer_load_definitions(char *definitions, size_t definitions_length){
   return 0;
 }
 
-int lxer_load_types(char *types, size_t types_length){
+int lxer_load_types(char **types, size_t types_length){
   if(types == NULL || types_length < 1){
     lxer_noty_error("Types pointer is null or no element in the array\n");
     return 1;
@@ -66,7 +66,7 @@ int lxer_load_types(char *types, size_t types_length){
 }
 
 
-int lxer_load_operators(char *operators, size_t operators_length){
+int lxer_load_operators(char **operators, size_t operators_length){
   if(operators == NULL || operators_length < 1){
     lxer_noty_error("Operators pointer is null or no element in the array\n");
     return 1;
@@ -78,7 +78,7 @@ int lxer_load_operators(char *operators, size_t operators_length){
   return 0;
 }
 
-int lxer_load_comments(char *comments, size_t comments_length){
+int lxer_load_comments(char **comments, size_t comments_length){
   if(comments == NULL || comments_length < 1){
     lxer_noty_error("Comments pointer is null or no element in the array\n");
     return 1;
@@ -91,7 +91,7 @@ int lxer_load_comments(char *comments, size_t comments_length){
 }
 
 
-int lxer_load_separators(char *separators, size_t separators_length){
+int lxer_load_separators(char **separators, size_t separators_length){
   if(separators == NULL || separators_length < 1){
     lxer_noty_error("Separators pointer is null or no element in the array\n");
     return 1;
@@ -103,13 +103,13 @@ int lxer_load_separators(char *separators, size_t separators_length){
   return 0;
 }
 
-int lxer_load_alphabet( char *symbols, size_t symbols_length,
-                        char *keywords, size_t keywords_length,
-                        char *definitions, size_t definitions_length,
-                        char *types, size_t types_length,
-                        char *operators, size_t operators_length,
-                        char *comments, size_t comments_length,
-                        char *separators, size_t separators_length ){
+int lxer_load_alphabet( char **symbols, size_t symbols_length,
+                        char **keywords, size_t keywords_length,
+                        char **definitions, size_t definitions_length,
+                        char **types, size_t types_length,
+                        char **operators, size_t operators_length,
+                        char **comments, size_t comments_length,
+                        char **separators, size_t separators_length){
 
   if(
       lxer_load_symb(symbols,symbols_length) == 1 ||
@@ -188,11 +188,300 @@ String_builder* lxer_get_phrase(){
 }
 
 
+
 bool lxer_eof(){
   if(l.file_word->string[l.current_pointer] == '\0'){
     return true;
   }
   return false;
 }
+
+void lxer_next_token(){
+  while(l.file_word->string[l.current_pointer] == '\0'){
+    l.current_pointer += 1; 
+  }
+}
+
+
+String_builder* lxer_check_for_phrase(char*keyword, int start_point){
+  String_builder*sb = NULL;
+  MALLOC(sizeof(String_builder), sb, String_builder*);
+
+  bool end = false;  
+  char buffer[256];
+  int i=1;
+  sb->len = 6969;
+    
+  while(!end){
+    memcpy(&buffer[0], &l.file_word->string[l.current_pointer+start_point], i);
+    buffer[i] = '\0';
+    if(strcpy(buffer, keyword) == 0){
+      end = true;
+    }else{
+      i+=1;
+    }
+  }
+
+  MALLOC(sizeof(char)*i+1, sb->string, char*);
+  sb->len = i+1;
+  strcpy(sb->string, buffer);
+
+  return sb;
+}
+
+// lexer token relation
+
+bool lxer_left_expect_right(char**arr_1, size_t arr_1_length, char** arr_2, size_t arr_2_length){
+  bool end = false;
+  size_t i=0;
+  String_builder *sb = NULL;
+  char*buffer;
+  MALLOC(sizeof(char)*256, buffer, char*);
+
+  while(!end && i < arr_1_length){
+    sb = lxer_check_for_phrase(arr_1[i], l.current_pointer);  
+    if(sb->len == 6969){
+      i+=1;
+    }else{
+      end = true;
+    }
+  }
+  if(i == arr_1_length){
+    lxer_noty_error("Unable to find token in specific location\n");
+    return false;
+  }
+
+  lxer_next_token();
+
+  strcpy(buffer, sb->string);
+  i = 0;
+  end = false;
+
+  while(!end && i < arr_2_length){
+    sb = lxer_check_for_phrase(arr_2[i], l.current_pointer);  
+    if(sb->len == 6969){
+      i+=1;
+    }else{
+      end = true;
+    }
+  }
+
+  if(i == arr_2_length){
+    lxer_noty_error("No relation between selected symbol ");
+    fprintf(stderr, "%s and any keyword\n", buffer);
+    return false;
+  }
+  return true;
+
+}
+
+
+/*
+  *
+  * symbol -> any
+  *
+  * */
+
+bool lxer_symbol_expect_keyword(){
+  return lxer_left_expect_right(l.symbols, l.symbols_length, l.keywords, l.keywords_length);  
+}
+
+bool lxer_symbol_expect_definition(){
+  return lxer_left_expect_right(l.symbols, l.symbols_length, l.definitions, l.definitions_length);  
+}
+
+bool lxer_symbol_expect_type(){
+  return lxer_left_expect_right(l.symbols, l.symbols_length, l.types, l.types_length);  
+}
+
+bool lxer_symbol_expect_operator(){
+  return lxer_left_expect_right(l.symbols, l.symbols_length, l.operators, l.operators_length);  
+}
+
+bool lxer_symbol_expect_comment(){
+  return lxer_left_expect_right(l.symbols, l.symbols_length, l.comments, l.comments_length);  
+}
+
+bool lxer_symbol_expect_separator(){
+  return lxer_left_expect_right(l.symbols, l.symbols_length, l.separators, l.separators_length);  
+}
+
+
+
+/*
+  *
+  * keyword -> any
+  *
+  * */
+
+
+bool lxer_keyword_expect_symbol(){
+  return lxer_left_expect_right(l.keywords, l.keywords_length, l.symbols, l.symbols_length);  
+}
+
+bool lxer_keyword_expect_definition(){
+  return lxer_left_expect_right(l.keywords, l.keywords_length, l.definitions, l.definitions_length);  
+
+}
+
+bool lxer_keyword_expect_type(){
+  return lxer_left_expect_right(l.keywords, l.keywords_length, l.types, l.types_length);  
+
+}
+
+bool lxer_keyword_expect_operator(){
+  return lxer_left_expect_right(l.keywords, l.keywords_length, l.operators, l.operators_length);  
+
+}
+
+bool lxer_keyword_expect_comment(){
+  return lxer_left_expect_right(l.keywords, l.keywords_length, l.comments, l.comments_length);  
+
+}
+
+bool lxer_keyword_expect_separator(){
+  return lxer_left_expect_right(l.keywords, l.keywords_length, l.separators, l.separators_length);  
+
+}
+
+
+
+/*
+  *
+  * definition -> any
+  *
+  * */
+
+
+
+bool lxer_definition_expect_symbol(){
+  return lxer_left_expect_right(l.definitions, l.definitions_length, l.symbols, l.symbols_length);
+}
+
+bool lxer_definition_expect_keyword(){
+  return lxer_left_expect_right(l.definitions, l.definitions_length, l.keywords, l.keywords_length);  
+  
+}
+
+bool lxer_definition_expect_types(){
+  return lxer_left_expect_right(l.definitions, l.definitions_length, l.types, l.types_length);  
+
+}
+
+bool lxer_definition_expect_operator(){
+  return lxer_left_expect_right(l.definitions, l.definitions_length, l.operators, l.operators_length);  
+
+}
+
+bool lxer_definition_expect_comment(){
+  return lxer_left_expect_right(l.definitions, l.definitions_length, l.comments, l.comments_length);  
+
+}
+
+bool lxer_definition_expect_separator(){
+  return lxer_left_expect_right(l.definitions, l.definitions_length, l.separators, l.separators_length);  
+
+}
+
+
+/*
+  *
+  * type -> any
+  *
+  * */
+
+
+
+bool lxer_type_expect_symbol(){
+  return lxer_left_expect_right(l.types,l.types_length, l.symbols, l.symbols_length);
+}
+
+bool lxer_type_expect_keyword(){
+  return lxer_left_expect_right(l.types,l.types_length, l.keywords, l.keywords_length);
+} 
+
+bool lxer_type_expect_definition(){
+  return lxer_left_expect_right(l.types,l.types_length, l.definitions, l.definitions_length);
+} 
+
+bool lxer_type_expect_operator(){
+  return lxer_left_expect_right(l.types,l.types_length, l.operators, l.operators_length);
+} 
+
+bool lxer_type_expect_comments(){
+  return lxer_left_expect_right(l.types,l.types_length, l.comments, l.comments_length);
+} 
+
+bool lxer_type_expect_separator(){
+  return lxer_left_expect_right(l.types,l.types_length, l.separators, l.separators_length);
+} 
+
+
+
+/*
+  *
+  * operator -> any
+  *
+  * */
+
+
+bool lxer_operator_expect_symbol(){
+  return lxer_left_expect_right(l.operators,l.operators_length, l.symbols, l.symbols_length);
+} 
+
+bool lxer_operator_expect_keyword(){
+  return lxer_left_expect_right(l.operators,l.operators_length, l.keywords, l.keywords_length);
+}  
+
+bool lxer_operator_expect_definition(){
+  return lxer_left_expect_right(l.operators,l.operators_length, l.definitions, l.definitions_length);
+}  
+
+bool lxer_operator_expect_type(){
+  return lxer_left_expect_right(l.operators,l.operators_length, l.types, l.types_length);
+}  
+
+bool lxer_operator_expect_comment(){
+  return lxer_left_expect_right(l.operators,l.operators_length, l.comments, l.comments_length);
+}  
+
+bool lxer_operator_expect_separator(){
+  return lxer_left_expect_right(l.operators,l.operators_length, l.separators, l.separators_length);
+}  
+
+
+/*
+  *
+  * separator -> any
+  *
+  * */
+
+
+bool lxer_separator_expect_symbol(){
+  return lxer_left_expect_right(l.separators, l.separators_length,  l.symbols, l.symbols_length);
+}  
+
+bool lxer_separator_expect_keyword() {
+  return lxer_left_expect_right(l.separators, l.separators_length,  l.keywords, l.keywords_length);
+}   
+
+bool lxer_separator_expect_definition(){
+  return lxer_left_expect_right(l.separators, l.separators_length,  l.definitions, l.definitions_length);
+}   
+
+bool lxer_separator_expect_type(){
+  return lxer_left_expect_right(l.separators, l.separators_length,  l.types, l.types_length);
+}  
+
+bool lxer_separator_expect_operator(){
+  return lxer_left_expect_right(l.separators, l.separators_length,  l.operators, l.operators_length);
+}  
+
+bool lxer_separator_expect_comment() {
+  return lxer_left_expect_right(l.separators, l.separators_length,  l.comments, l.comments_length);
+}  
+
+
+
 
 

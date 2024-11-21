@@ -33,6 +33,7 @@ typedef enum {
   DEFINITION,
   SYSTEM,
   MODULE,
+  IMPORT,
 
   DEF_COUNT
 }DEF;
@@ -117,6 +118,7 @@ static char *definitions[DEF_COUNT] = {
   [DEFINITION]        = "def",
   [SYSTEM]            = "@system",
   [MODULE]            = "module",
+  [IMPORT]            = "import"
 };
 
 static char *types[TYP_COUNT] = {
@@ -158,7 +160,7 @@ static char *separators[SPR_COUNT] = {
 };
 
 void xeb_lexer(String_builder*path);
-void xeb_compiler(String_builder*path,String_builder*output_path);          // check the sintax, check return type for function
+int xeb_compiler(String_builder*path,String_builder*output_path);          // check the sintax, check return type for function
 //void xeb_composer();          // compose the final lexer output
 void xeb_binary_builder();    // use the output from the composer and translate the lexer into binary stream, then it compile
 

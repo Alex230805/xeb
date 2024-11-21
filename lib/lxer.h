@@ -9,27 +9,29 @@
 #include <string.h>
 #include <toolbox.h>
 #include <stdbool.h>
+//#include <Array.h>
+
 
 typedef struct{
-  char *symbols;
+  char **symbols;
   size_t symbols_length;
 
-  char* keywords;
+  char **keywords;
   size_t keywords_length;
 
-  char *definitions;
+  char **definitions;
   size_t definitions_length;
 
-  char *types;
+  char **types;
   size_t types_length;
 
-  char *operators;
+  char **operators;
   size_t operators_length;
 
-  char *comments;
+  char **comments;
   size_t comments_length;
 
-  char *separators;
+  char **separators;
   size_t separators_length;
 
   String_builder *file_word;
@@ -43,21 +45,21 @@ static lxer l = {0};
 
 // lxer symbols definition 
 
-int lxer_load_symb(char *symbols, size_t symbols_length);
-int lxer_load_keyw(char *keywords, size_t keywords_length);
-int lxer_load_definitions(char *definitions, size_t definitions_length);
-int lxer_load_types(char *types, size_t types_length);
-int lxer_load_operators(char *operators, size_t operators_length);
-int lxer_load_separators(char *separators, size_t separators_length);
-int lxer_load_comments(char *comments, size_t comments_length);
+int lxer_load_symb(char **symbols, size_t symbols_length);
+int lxer_load_keyw(char **keywords, size_t keywords_length);
+int lxer_load_definitions(char **definitions, size_t definitions_length);
+int lxer_load_types(char **types, size_t types_length);
+int lxer_load_operators(char **operators, size_t operators_length);
+int lxer_load_separators(char **separators, size_t separators_length);
+int lxer_load_comments(char **comments, size_t comments_length);
 
-int lxer_load_alphabet( char *symbols, size_t symbols_length,
-                        char *keywords, size_t keywords_length,
-                        char *definitions, size_t definitions_length,
-                        char *comments, size_t comments_length,
-                        char *types, size_t types_length,
-                        char *operators, size_t operators_length,
-                        char *separators, size_t separators_length );
+int lxer_load_alphabet( char **symbols, size_t symbols_length,
+                        char **keywords, size_t keywords_length,
+                        char **definitions, size_t definitions_length,
+                        char **types, size_t types_length,
+                        char **operators, size_t operators_length,
+                        char **comments, size_t comments_length,
+                        char **separators, size_t separators_length);
 
 // error, warning and notification 
 
@@ -70,8 +72,61 @@ void lxer_noty_printf(const char*str);
 void lxer_read_entire_file(const char* filepath);
 char lxer_get_token();
 String_builder* lxer_get_phrase();
-bool lxer_eof();
+String_builder* lxer_check_for_phrase(char*keyword, int start_point);
 
+
+
+bool lxer_eof();
+void lxer_next_token();
+
+// lexer token relation
+
+
+bool lxer_left_expect_right(char**arr_1, size_t arr_1_length,char** arr_2, size_t arr_2_length);
+
+bool lxer_symbol_expect_keyword();
+bool lxer_symbol_expect_definition();
+bool lxer_symbol_expect_type();
+bool lxer_symbol_expect_operator();
+bool lxer_symbol_expect_comment();
+bool lxer_symbol_expect_separator();
+
+bool lxer_keyword_expect_symbol();
+bool lxer_keyword_expect_definition();
+bool lxer_keyword_expect_type();
+bool lxer_keyword_expect_operator();
+bool lxer_keyword_expect_comment();
+bool lxer_keyword_expect_separator();
+
+bool lxer_definition_expect_symbol();
+bool lxer_definition_expect_keyword();
+bool lxer_definition_expect_types();
+bool lxer_definition_expect_operator();
+bool lxer_definition_expect_comment();
+bool lxer_definition_expect_separator();
+
+bool lxer_type_expect_symbol();
+bool lxer_type_expect_keyword();
+bool lxer_type_expect_definition();
+bool lxer_type_expect_operator();
+bool lxer_type_expect_comments();
+bool lxer_type_expect_separator();
+
+bool lxer_operator_expect_symbol();
+bool lxer_operator_expect_keyword();
+bool lxer_operator_expect_definition();
+bool lxer_operator_expect_type();
+bool lxer_operator_expect_comment();
+bool lxer_operator_expect_separator();
+
+bool lxer_separator_expect_symbol();
+bool lxer_separator_expect_keyword();
+bool lxer_separator_expect_definition();
+bool lxer_separator_expect_type();
+bool lxer_separator_expect_operator();
+bool lxer_separator_expect_comment();
+
+//Array* lxer_check_namespace();
 
 #ifndef LXER_IMPLEMENTATION
 #define LXER_IMPLEMENTATION
