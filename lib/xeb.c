@@ -14,12 +14,11 @@ void xeb_preprocessor(){
   bool have_main = false;
 
   namespaces_occ = lxer_locate_occurences(definitions[FUNCTION]);
-  function_definitions_occ = lxer_locate_occurences(definitions[DEFINITION]);
+
   linker_reference_occ = lxer_locate_occurences(definitions[IMPORT]);
   comments_position_occ = lxer_locate_occurences(comments[DOUBLE_DASH]);
 
   array_new(namespaces);
-  array_new(function_definitions);
   array_new(linker_reference);
   array_new(comments_position);
   

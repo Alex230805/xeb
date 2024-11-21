@@ -161,13 +161,11 @@ typedef struct{
 }range;
 
 static Array* namespaces_occ;
-static Array* function_definitions_occ;
 static Array* linker_reference_occ;
 static Array* comments_position_occ;
 
 
 static Array* namespaces;
-static Array* function_definitions;
 static Array* linker_reference;
 static Array* comments_position;
 
