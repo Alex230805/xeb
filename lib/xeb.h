@@ -154,6 +154,12 @@ static char *separators[SPR_COUNT] = {
   [SEMICOLON]         = ";",
 };
 
+
+typedef struct{
+  void* start;
+  void* end;
+}range;
+
 static Array* namespaces_occ;
 static Array* function_definitions_occ;
 static Array* linker_reference_occ;
@@ -164,6 +170,10 @@ static Array* namespaces;
 static Array* function_definitions;
 static Array* linker_reference;
 static Array* comments_position;
+
+
+void xeb_error(const char*text);
+void xeb_warn(const char*text);
 
 void xeb_lexer();
 int xeb_compiler(String_builder*path,String_builder*output_path);          // check the sintax, check return type for function

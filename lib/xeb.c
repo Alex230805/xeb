@@ -1,10 +1,18 @@
 #define XEB_C
 #include "xeb.h"
 
+void xeb_error(const char*text){
+  fprintf(stderr,"[Compiler ERROR]: %s", text);
+}
 
+void xeb_warn(const char*text){
+  fprintf(stderr,"[Compiler WARNING]: %s", text);
+}
 
 void xeb_preprocessor(){
   
+  bool have_main = false;
+
   namespaces_occ = lxer_locate_occurences(definitions[FUNCTION]);
   function_definitions_occ = lxer_locate_occurences(definitions[DEFINITION]);
   linker_reference_occ = lxer_locate_occurences(definitions[IMPORT]);
@@ -18,31 +26,82 @@ void xeb_preprocessor(){
   size_t j = 0;
   bool end = false;
   char*buffer = NULL;
+  char*pointer = NULL;
 
-  /* get function name */
+  /* get function name 
+   *
+   *  NOTE: this is not the  parsing for function function reference 
+   *  or definition. It save only the namespace reference and 
+   *  next im the lexing process it will be used to check 
+   *  the function definition or function call or function 
+   *  implementation etc etc
+   * */
+
+
 
   for(size_t i=0;i<namespaces_occ->nelem;i++){
-    char*pointer;
+    pointer = NULL;
+    buffer = NULL;
+    end = false;
+    j = 0;
+
     array_get(namespaces_occ, i, pointer);
+    pointer+=strlen(definitions[FUNCTION]);
+    while(pointer[j] <= ' '){
+      j+=1;
+    }
+
+    pointer += j;
+    j = 0;
+
     while(!end){
-      if((pointer[j] >= 0x61 && pointer[j] <= 0x7a) || (pointer[j] >= 0x41 && pointer[j] <= 0x5a)){
+      if((pointer[j] >= 0x61 && pointer[j] <= 0x7a) || (pointer[j] >= 0x41 && pointer[j] <= 0x5a) || pointer[j] == 0x5f){
         j+=1;
       }else{
         end = true;
       }
     }
-    MALLOC(sizeof(char)*j, buffer, char*);
-    memcpy(buffer, pointer, j);
-    buffer[j] = '\0';
 
+    MALLOC(sizeof(char)*j, buffer, char*);
+    memcpy(&buffer[0], pointer, j);
+    buffer[j] = '\0';
+    if(strcmp(buffer,"main") == 0) have_main = true;
     array_push(namespaces, buffer);
-    buffer = NULL;
+  }
+
+  if(!have_main){
+    xeb_error("Undefined reference to main function\n");
+    return;
   }
 
   j = 0;
   end = false;
 
-  TODO("Implement the preprocessor part to get function definition, linker reference with the import statement and exclude comments by saving the start and the end location\n");
+  /*  identify comment location */
+
+  for(size_t i=0;i<comments_position_occ->nelem; i++){
+    pointer = NULL;
+    end = false;
+    j=0;
+
+    array_get(comments_position_occ, i, pointer);
+    
+    while(!end){
+      if(pointer[j] != '\n'){
+        j+=1;
+      }else{
+        end = true;
+      }
+    }
+
+    range * r;
+    MALLOC(sizeof(range), r, range*);
+    r->start = pointer;
+    r->end = pointer+j+1;
+    array_push(comments_position, r);
+  }
+
+  TODO("Finish lxer_reference and function_definition in xeb preprocessor");
 
 }
 
@@ -57,7 +116,7 @@ void xeb_lexer(){
     separators, SPR_COUNT
   ) != 0){
     lxer_noty_error("Unable to load alphabet, failed on lexer startup not in actual code compilation\n");
-    exit(0);
+    return;
   }
 
   TODO("Complete lexer usage in xeb_lexer");

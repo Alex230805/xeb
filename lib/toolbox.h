@@ -11,8 +11,8 @@
     push_address(&general_gc, (void*)ret_ptr);
 
 #define UNUSED(x) (void)(x);
-#define TODO(string) printf("Function or operation under development: "string"\n");
-#define FATAL() printf("Operation not permitted\n"); exit(1);
+#define TODO(string) printf("[TODO]: Function or operation under development: "string"\n");
+#define FATAL() printf("[FATAL]: Operation not permitted\n"); exit(1);
 
 
 #define POOL_SIZE 1024

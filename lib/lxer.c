@@ -201,8 +201,8 @@ bool lxer_eof(){
 }
 
 void lxer_next_token(){
-  while(l.file_word->string[l.current_pointer] == '\0'){
-    l.current_pointer += 1; 
+  while(l.file_word->string[l.current_pointer] < 0x21){
+    l.current_pointer += 1;
   }
 }
 
@@ -489,6 +489,12 @@ bool lxer_separator_expect_comment() {
 Array* lxer_locate_occurences(char*word){
   Array* arr;
   char*switcher = l.file_word->string;
+
+  char buff[256];
+
+  strcpy(buff, word);
+  buff[strlen(word)] = ' ';
+  buff[strlen(word)+1] = '\0';
 
   array_new(arr);
   for(size_t i=0;i<l.file_word->len;i++){
