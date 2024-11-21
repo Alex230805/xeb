@@ -77,6 +77,7 @@ char lxer_get_token();
 String_builder* lxer_get_phrase();
 String_builder* lxer_check_for_phrase(char*keyword, int start_point);
 bool lxer_eof();
+int lxer_get_file_size();
 void lxer_next_token();
 Array* lxer_locate_occurences(char*word);
 

@@ -66,6 +66,10 @@ int lxer_load_types(char **types, size_t types_length){
 }
 
 
+int lxer_get_file_size(){
+  return l.file_word->len;
+}
+
 int lxer_load_operators(char **operators, size_t operators_length){
   if(operators == NULL || operators_length < 1){
     lxer_noty_error("Operators pointer is null or no element in the array\n");
