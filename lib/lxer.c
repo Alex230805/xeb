@@ -482,6 +482,19 @@ bool lxer_separator_expect_comment() {
 }  
 
 
+Array* lxer_locate_occurences(char*word){
+  Array* arr;
+  char*switcher = l.file_word->string;
 
+  array_new(arr);
+  for(size_t i=0;i<l.file_word->len;i++){
+    char*pointer = strstr(&switcher[0], word);  
+    if(pointer != NULL){
+      array_push(arr, (void*)pointer);
+      switcher = &l.file_word->string[(int)(pointer-l.file_word->string+1)];
+    }
+  }
+  return arr;
+}
 
 

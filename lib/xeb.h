@@ -8,11 +8,6 @@
 #include <lxer.h>
 #include <toolbox.h>
 
-
-#define TYPE void
-
-#include "Array.h"
-
 typedef enum {
   RETURN_ARROW,
   OPEN_PAR,

@@ -9,8 +9,11 @@
 #include <string.h>
 #include <toolbox.h>
 #include <stdbool.h>
-//#include <Array.h>
 
+
+#define TYPE void*
+
+#include <Array.h>
 
 typedef struct{
   char **symbols;
@@ -73,11 +76,9 @@ void lxer_read_entire_file(const char* filepath);
 char lxer_get_token();
 String_builder* lxer_get_phrase();
 String_builder* lxer_check_for_phrase(char*keyword, int start_point);
-
-
-
 bool lxer_eof();
 void lxer_next_token();
+Array* lxer_locate_occurences(char*word);
 
 // lexer token relation
 
