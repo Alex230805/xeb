@@ -14,7 +14,6 @@ void xeb_preprocessor(){
   bool have_main = false;
 
   namespaces_occ = lxer_locate_occurences(definitions[FUNCTION]);
-
   linker_reference_occ = lxer_locate_occurences(definitions[IMPORT]);
   comments_position_occ = lxer_locate_occurences(comments[DOUBLE_DASH]);
 
@@ -24,7 +23,6 @@ void xeb_preprocessor(){
   
   size_t j = 0;
   bool end = false;
-  char*buffer = NULL;
   char*pointer = NULL;
 
   /* get function name 
@@ -40,7 +38,6 @@ void xeb_preprocessor(){
 
   for(size_t i=0;i<namespaces_occ->nelem;i++){
     pointer = NULL;
-    buffer = NULL;
     end = false;
     j = 0;
 
@@ -61,11 +58,22 @@ void xeb_preprocessor(){
       }
     }
 
-    MALLOC(sizeof(char)*j, buffer, char*);
-    memcpy(&buffer[0], pointer, j);
-    buffer[j] = '\0';
-    if(strcmp(buffer,"main") == 0) have_main = true;
-    array_push(namespaces, buffer);
+    /* create box element to save function name and the row where it is located */
+
+    box* b = NULL;
+
+    MALLOC(sizeof(box), b, box*);
+    MALLOC(sizeof(String_builder), b->word, String_builder*);
+    MALLOC(sizeof(char)*j, b->word->string, char*);
+
+    b->word->len = j;
+    memcpy(&b->word->string[0], pointer, j);
+    b->word->string[j] = '\0';
+    
+    array_get(namespaces_occ, i, b->position);
+
+    if(strcmp(b->word->string,"main") == 0) have_main = true;
+    array_push(namespaces, b);
   }
 
   if(!have_main){

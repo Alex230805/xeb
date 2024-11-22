@@ -160,6 +160,11 @@ typedef struct{
   void* end;
 }range;
 
+typedef struct{
+  String_builder* word;
+  void*position;
+}box;
+
 static Array* namespaces_occ;
 static Array* linker_reference_occ;
 static Array* comments_position_occ;
