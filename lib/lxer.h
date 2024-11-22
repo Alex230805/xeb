@@ -80,7 +80,7 @@ bool lxer_eof();
 int lxer_get_file_size();
 void lxer_next_token();
 Array* lxer_locate_occurences(char*word);
-
+char* lxer_get_first_valid_location();
 // lexer token relation
 
 

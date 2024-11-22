@@ -507,4 +507,12 @@ Array* lxer_locate_occurences(char*word){
   return arr;
 }
 
+char* lxer_get_first_valid_location(){
+  int i=0;
+  while(l.file_word->string[i] < 0x21){
+    i+=1;
+  }
+
+  return &l.file_word->string[i]; 
+}
 
