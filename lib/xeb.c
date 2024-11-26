@@ -16,15 +16,18 @@ void xeb_preprocessor(){
   namespaces_occ = lxer_locate_occurences(definitions[FUNCTION]);
   linker_reference_occ = lxer_locate_occurences(definitions[IMPORT]);
   comments_position_occ = lxer_locate_occurences(comments[DOUBLE_DASH]);
+  string_literal_position_occ = lxer_locate_occurences(literals[QUOTE]);
 
   array_new(namespaces);
   array_new(linker_reference);
   array_new(comments_position);
+  array_new(string_literal_position_occ);
   
   size_t j = 0;
   bool end = false;
   char* buffer = NULL;
   char*pointer = NULL;
+  char*pointer2 = NULL;
 
   /* get function name 
    *
@@ -146,6 +149,46 @@ void xeb_preprocessor(){
     array_push(linker_reference, buffer);
   } 
 
+  // string literal preprocessing
+
+  if(string_literal_position_occ->nelem%2 != 0){
+    xeb_error("You messed up some string termination quote, check your code!\n");
+    return;
+  }
+
+  for(size_t i=0;i<string_literal_position_occ->nelem/2;i+=2){
+    pointer = NULL;
+    pointer2 = NULL;
+    array_new(string_literal_position);
+    array_get(string_literal_position_occ, i, pointer);
+    array_get(string_literal_position_occ, i+1, pointer2);
+    int length = pointer2-pointer;
+    if(length <= 1){
+      xeb_warn("String may be empty\n");
+    }
+
+    /*
+      *
+      * build a box element with a range element as position reference 
+      */
+
+    box* s = NULL;
+    range* r = NULL;
+    MALLOC(sizeof(box), s, box*);
+    MALLOC(sizeof(String_builder), s->word, String_builder*);
+    MALLOC(sizeof(char*)*length+1, s->word->string, char*);
+    MALLOC(sizeof(range), r, range*);
+    r->start = pointer;
+    r->end = pointer2;
+
+    memcpy(s->word->string, pointer, length);
+    s->word->string[length] = '\0';
+
+    s->word->len = length+1;
+    s->position = (void*)r;
+
+    array_push(string_literal_position, s);
+  } 
 }
 
 void xeb_lexer(){

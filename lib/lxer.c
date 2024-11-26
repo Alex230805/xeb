@@ -414,29 +414,36 @@ bool lxer_literal_expect_symbol(){
     TODO("Implement search for different token after the literal");
 
   }
+  
 
+  return ret;
 }
 
 bool lxer_literal_expect_keyword(){
   bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.keywords, l.keywords_length);
+  return ret;
 
 }
 
 bool lxer_literal_expect_definition(){
   bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.definitions, l.definitions_length);
+  return ret;
 
 }
 
 bool lxer_literal_expect_types(){
-  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.types, l.tyles_length);
+  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.types, l.types_length);
+  return ret;
 }
 
 bool lxer_literal_expect_operator(){
   bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.operators, l.operators_length);
+  return ret;
 }
 
 bool lxer_literal_expect_separator(){
   bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.separators, l.separators_length);
+  return ret;
 }
 
 bool lxer_symbol_expect_literal();
