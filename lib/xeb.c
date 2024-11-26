@@ -120,7 +120,8 @@ void xeb_lexer(){
     types, TYP_COUNT,
     comments, CMT_COUNT,
     operators, OPR_COUNT,
-    separators, SPR_COUNT
+    separators, SPR_COUNT,
+    literals, LTR_COUNT
   ) != 0){
     lxer_noty_error("Unable to load alphabet, failed on lexer startup not in actual code compilation\n");
     return;
@@ -130,6 +131,10 @@ void xeb_lexer(){
   return;
   
   while(!lxer_eof()){
+     
+  
+
+    lxer_next_token();
   }
 
 }

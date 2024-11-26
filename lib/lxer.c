@@ -70,6 +70,10 @@ int lxer_get_file_size(){
   return l.file_word->len;
 }
 
+char* lxer_get_file_ptr(){
+  return l.file_word->string;
+}
+
 int lxer_load_operators(char **operators, size_t operators_length){
   if(operators == NULL || operators_length < 1){
     lxer_noty_error("Operators pointer is null or no element in the array\n");
@@ -107,13 +111,27 @@ int lxer_load_separators(char **separators, size_t separators_length){
   return 0;
 }
 
+
+int lxer_load_literals(char **literals, size_t literals_length){
+  if(literals == NULL || literals_length < 1){
+    lxer_noty_error("Literals pointer is null or no element in the array\n");
+    return 1;
+  }
+
+  l.literals = literals;
+  l.literals_length = literals_length;
+  
+  return 0;
+}
+
 int lxer_load_alphabet( char **symbols, size_t symbols_length,
                         char **keywords, size_t keywords_length,
                         char **definitions, size_t definitions_length,
                         char **types, size_t types_length,
                         char **operators, size_t operators_length,
                         char **comments, size_t comments_length,
-                        char **separators, size_t separators_length){
+                        char **separators, size_t separators_length,
+                       char **literals, size_t literals_length){
 
   if(
       lxer_load_symb(symbols,symbols_length) == 1 ||
@@ -122,7 +140,8 @@ int lxer_load_alphabet( char **symbols, size_t symbols_length,
       lxer_load_types(types, types_length) == 1 ||
       lxer_load_operators(operators, operators_length) == 1 ||
       lxer_load_comments(comments, comments_length) == 1 ||
-      lxer_load_separators(separators, separators_length) == 1
+      lxer_load_separators(separators, separators_length) == 1 ||
+      lxer_load_literals(literals, literals_length) == 1
   ){
     lxer_noty_error("An error occurred during the loading alphabet process\n");
     exit(1);
@@ -201,6 +220,7 @@ bool lxer_eof(){
 }
 
 void lxer_next_token(){
+  TODO("Check for end_of_token and for anythings but 0x21\n");
   while(l.file_word->string[l.current_pointer] < 0x21){
     l.current_pointer += 1;
   }
@@ -387,6 +407,47 @@ bool lxer_definition_expect_separator(){
 
 }
 
+bool lxer_literal_expect_symbol(){
+  bool ret =  lxer_left_expect_right(l.literals, l.literals_length, l.symbols, l.symbols_length);
+
+  if(!ret){
+    TODO("Implement search for different token after the literal");
+
+  }
+
+}
+
+bool lxer_literal_expect_keyword(){
+  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.keywords, l.keywords_length);
+
+}
+
+bool lxer_literal_expect_definition(){
+  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.definitions, l.definitions_length);
+
+}
+
+bool lxer_literal_expect_types(){
+  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.types, l.tyles_length);
+}
+
+bool lxer_literal_expect_operator(){
+  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.operators, l.operators_length);
+}
+
+bool lxer_literal_expect_separator(){
+  bool ret = lxer_left_expect_right(l.literals, l.literals_length, l.separators, l.separators_length);
+}
+
+bool lxer_symbol_expect_literal();
+bool lxer_keyword_expect_literal();
+bool lxer_definition_expect_literal();
+bool lxer_type_expect_literal();
+bool lxer_operator_expect_literal();
+bool lxer_separator_expect_literal();
+
+
+
 
 /*
   *
@@ -507,4 +568,8 @@ Array* lxer_locate_occurences(char*word){
   return arr;
 }
 
+
+size_t lxer_get_pointer(){
+  return l.current_pointer;
+}
 

@@ -89,6 +89,14 @@ typedef enum {
   KWD_COUNT
 }KWD;
 
+typedef enum{
+  TRUE,
+  FALSE,
+  QUOTE,
+
+  LTR_COUNT
+}LTR;
+
 static char *symbols[SYM_COUNT] = {
   [RETURN_ARROW]       = "->",
   [OPEN_PAR]          = "(",
@@ -155,6 +163,13 @@ static char *separators[SPR_COUNT] = {
 };
 
 
+static char *literals[LTR_COUNT] = {
+  [FALSE]             = "false",
+  [TRUE]              = "true",
+  [QUOTE]             = "\"",
+};
+
+
 typedef struct{
   void* start;
   void* end;
@@ -168,12 +183,12 @@ typedef struct{
 static Array* namespaces_occ;
 static Array* linker_reference_occ;
 static Array* comments_position_occ;
+static Array* string_literal_position_occ; 
 
-
-static Array* namespaces;
-static Array* linker_reference;
-static Array* comments_position;
-
+static Array* namespaces;             // box  
+static Array* linker_reference;     
+static Array* comments_position;      // range
+static Array* string_literal_position; // box element
 
 void xeb_error(const char*text);
 void xeb_warn(const char*text);

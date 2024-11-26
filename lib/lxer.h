@@ -37,6 +37,9 @@ typedef struct{
   char **separators;
   size_t separators_length;
 
+  char** literals;
+  size_t literals_length;
+
   String_builder *file_word;
   size_t current_pointer;
 
@@ -56,13 +59,16 @@ int lxer_load_operators(char **operators, size_t operators_length);
 int lxer_load_separators(char **separators, size_t separators_length);
 int lxer_load_comments(char **comments, size_t comments_length);
 
+int lxer_load_literals(char **literals, size_t literals_length);
+
 int lxer_load_alphabet( char **symbols, size_t symbols_length,
                         char **keywords, size_t keywords_length,
                         char **definitions, size_t definitions_length,
                         char **types, size_t types_length,
                         char **operators, size_t operators_length,
                         char **comments, size_t comments_length,
-                        char **separators, size_t separators_length);
+                        char **separators, size_t separators_length,
+                        char **literals, size_t literals_length);
 
 // error, warning and notification 
 
@@ -77,8 +83,10 @@ char lxer_get_token();
 String_builder* lxer_get_phrase();
 String_builder* lxer_check_for_phrase(char*keyword, int start_point);
 bool lxer_eof();
+char* lxer_get_file_ptr();
 int lxer_get_file_size();
 void lxer_next_token();
+size_t lxer_get_pointer();
 Array* lxer_locate_occurences(char*word);
 
 // lexer token relation
@@ -129,6 +137,21 @@ bool lxer_separator_expect_operator();
 bool lxer_separator_expect_comment();
 
 //Array* lxer_check_namespace();
+
+bool lxer_literal_expect_symbol();
+bool lxer_literal_expect_keyword();
+bool lxer_literal_expect_definition();
+bool lxer_literal_expect_types();
+bool lxer_literal_expect_operator();
+bool lxer_literal_expect_separator();
+
+bool lxer_symbol_expect_literal();
+bool lxer_keyword_expect_literal();
+bool lxer_definition_expect_literal();
+bool lxer_type_expect_literal();
+bool lxer_operator_expect_literal();
+bool lxer_separator_expect_literal();
+
 
 #ifndef LXER_IMPLEMENTATION
 #define LXER_IMPLEMENTATION
