@@ -1,9 +1,9 @@
-FLAG=-Wall -Wextra -Werror
+FLAG= 
 INCLUDE_DIR=-I lib/
 LIB_DIR=-L bin/
 
 all: xeb main
-	gcc $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) bin/main.o -o xebc -llxer -lxeb -ltoolbox
+	gcc $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) bin/main.o -o xebc -lxeb -llxer -ltoolbox
 
 xeb: toolbox lxer
 	gcc $(FLAG) $(INCLUDE_DIR) -c -o bin/xeb.o ./lib/xeb.c

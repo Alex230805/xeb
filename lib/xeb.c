@@ -23,6 +23,7 @@ void xeb_preprocessor(){
   
   size_t j = 0;
   bool end = false;
+  char* buffer = NULL;
   char*pointer = NULL;
 
   /* get function name 
@@ -108,7 +109,42 @@ void xeb_preprocessor(){
     array_push(comments_position, r);
   }
 
-  TODO("Finish lxer_reference and function_definition in xeb preprocessor");
+  for(size_t i=0;i<linker_reference_occ->nelem;i++){
+    buffer = NULL;
+    pointer = NULL;
+    end = false;
+    j = 0;
+
+    array_get(linker_reference_occ, i, pointer);
+    if(pointer-lxer_get_first_valid_location() != 0){
+      xeb_error("You must define an 'import' statement on top of the source code\n");
+      return;
+    }
+    pointer+=strlen(definitions[IMPORT]);
+    while(pointer[j] <= ' '){
+      j+=1;
+    }
+
+    pointer += j;
+    j = 0;
+
+    while(!end){
+      if((pointer[j] >= 0x61 && pointer[j] <= 0x7a) || (pointer[j] >= 0x41 && pointer[j] <= 0x5a) || pointer[j] == 0x5f || pointer[j] != ';'){
+        j+=1;
+      }else{
+        end = true;
+      }
+    }
+
+    /* create box element to save function name and the row where it is located */
+
+
+    MALLOC(sizeof(char)*j+1, buffer, char*); 
+    memcpy(&buffer[0], pointer, j);
+    buffer[j] = '\0';
+    printf("%s\n", buffer);
+    array_push(linker_reference, buffer);
+  } 
 
 }
 

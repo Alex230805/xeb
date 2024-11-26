@@ -57,7 +57,7 @@ typedef struct{
   Array->nelem -= 1;
 
 #define array_get(Array_h, POINTER,DATA)\
-  if(POINTER >= 0 && POINTER <= Array_h->size){\
+  if((int)POINTER >= 0 && POINTER <= Array_h->size){\
     DATA = Array_h->arr[POINTER];\
   }else{\
     DATA = NULL;\
