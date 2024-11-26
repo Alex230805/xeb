@@ -82,11 +82,16 @@ void lxer_read_entire_file(const char* filepath);
 char lxer_get_token();
 String_builder* lxer_get_phrase();
 String_builder* lxer_check_for_phrase(char*keyword, int start_point);
+
 bool lxer_eof();
 char* lxer_get_file_ptr();
+size_t lxer_get_total_file_line();
+size_t lxer_get_file_line_from_ptr(char*str);
+
 int lxer_get_file_size();
 void lxer_next_token();
 size_t lxer_get_pointer();
+
 Array* lxer_locate_occurences(char*word);
 char* lxer_get_first_valid_location();
 // lexer token relation

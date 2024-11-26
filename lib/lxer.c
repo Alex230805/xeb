@@ -73,6 +73,44 @@ int lxer_get_file_size(){
 char* lxer_get_file_ptr(){
   return l.file_word->string;
 }
+size_t lxer_get_total_file_line(){
+  size_t count = 0;
+  for(int i=0;i<l.file_word->len;i++){
+    if(l.file_word->string[i] == '\n'){
+      count++;
+    }
+  }
+  return count;
+}
+size_t lxer_get_file_line_from_ptr(char*str){
+  TODO("Check this function lxer_get_file_line_from_ptr\n");
+
+  size_t count = 0;
+  size_t total = lxer_get_total_file_line();
+  size_t len = 0;
+  size_t prev = 0;
+  bool end = false;
+  bool exit = false;
+  int j=0;
+
+  for(size_t i=0;i<total && !exit;i++){
+    end = false;
+    for(j=0;j<l.file_word->len && !end;j++){
+      if(l.file_word->string[prev+j] == '\n'){
+        end = true;
+      }
+    }
+
+    if(str > &l.file_word->string[prev] && str < &l.file_word->string[prev+j]){
+      exit = true;
+    }else{
+      count += 1;
+    }
+    prev = j+1;
+  }
+
+  return count;
+}
 
 int lxer_load_operators(char **operators, size_t operators_length){
   if(operators == NULL || operators_length < 1){

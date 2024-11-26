@@ -17,11 +17,10 @@ void xeb_preprocessor(){
   linker_reference_occ = lxer_locate_occurences(definitions[IMPORT]);
   comments_position_occ = lxer_locate_occurences(comments[DOUBLE_DASH]);
   string_literal_position_occ = lxer_locate_occurences(literals[QUOTE]);
-
   array_new(namespaces);
   array_new(linker_reference);
   array_new(comments_position);
-  array_new(string_literal_position_occ);
+  array_new(string_literal_position);
   
   size_t j = 0;
   bool end = false;
@@ -73,7 +72,6 @@ void xeb_preprocessor(){
     b->word->len = j;
     memcpy(&b->word->string[0], pointer, j);
     b->word->string[j] = '\0';
-    
     array_get(namespaces_occ, i, b->position);
 
     if(strcmp(b->word->string,"main") == 0) have_main = true;
@@ -84,6 +82,7 @@ void xeb_preprocessor(){
     xeb_error("Undefined reference to main function\n");
     return;
   }
+
 
   j = 0;
   end = false;
@@ -145,17 +144,14 @@ void xeb_preprocessor(){
     MALLOC(sizeof(char)*j+1, buffer, char*); 
     memcpy(&buffer[0], pointer, j);
     buffer[j] = '\0';
-    printf("%s\n", buffer);
     array_push(linker_reference, buffer);
   } 
 
   // string literal preprocessing
-
-  if(string_literal_position_occ->nelem%2 != 0){
+  if((string_literal_position_occ->nelem%2) != 0){
     xeb_error("You messed up some string termination quote, check your code!\n");
     return;
   }
-
   for(size_t i=0;i<string_literal_position_occ->nelem/2;i+=2){
     pointer = NULL;
     pointer2 = NULL;
@@ -163,8 +159,10 @@ void xeb_preprocessor(){
     array_get(string_literal_position_occ, i, pointer);
     array_get(string_literal_position_occ, i+1, pointer2);
     int length = pointer2-pointer;
+
     if(length <= 1){
-      xeb_warn("String may be empty\n");
+      xeb_warn("String may be empty in line ");
+      printf("%zu\n", lxer_get_file_line_from_ptr(pointer2));
     }
 
     /*
@@ -186,7 +184,6 @@ void xeb_preprocessor(){
 
     s->word->len = length+1;
     s->position = (void*)r;
-
     array_push(string_literal_position, s);
   } 
 }
