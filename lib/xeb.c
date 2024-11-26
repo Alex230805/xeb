@@ -13,10 +13,10 @@ void xeb_preprocessor(){
   
   bool have_main = false;
 
-  namespaces_occ = lxer_locate_occurences(definitions[FUNCTION]);
-  linker_reference_occ = lxer_locate_occurences(definitions[IMPORT]);
-  comments_position_occ = lxer_locate_occurences(comments[DOUBLE_DASH]);
-  string_literal_position_occ = lxer_locate_occurences(literals[QUOTE]);
+  namespaces_occ = lxer_locate_occurences(definitions[FUNCTION], false);
+  linker_reference_occ = lxer_locate_occurences(definitions[IMPORT], false);
+  comments_position_occ = lxer_locate_occurences(comments[DOUBLE_DASH], false);
+  string_literal_position_occ = lxer_locate_occurences(literals[QUOTE], true);
   array_new(namespaces);
   array_new(linker_reference);
   array_new(comments_position);
@@ -160,9 +160,10 @@ void xeb_preprocessor(){
     array_get(string_literal_position_occ, i+1, pointer2);
     int length = pointer2-pointer;
 
+    printf("%d\n", length);
     if(length <= 1){
       xeb_warn("String may be empty in line ");
-      printf("%zu\n", lxer_get_file_line_from_ptr(pointer2));
+      printf("%zu\n", lxer_get_file_line_from_ptr(pointer));
     }
 
     /*
@@ -203,13 +204,9 @@ void xeb_lexer(){
     return;
   }
 
-  TODO("Complete lexer usage in xeb_lexer");
   return;
   
   while(!lxer_eof()){
-     
-  
-
     lxer_next_token();
   }
 
@@ -217,7 +214,6 @@ void xeb_lexer(){
 
 int xeb_compiler(String_builder*path,String_builder*output_path){
 
-  TODO("Complete the compiler");
   char*ptr = strstr(path->string, ".x");
   if(ptr == NULL) return -1;
 

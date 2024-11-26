@@ -86,26 +86,17 @@ size_t lxer_get_file_line_from_ptr(char*str){
 
   size_t count = 0;
   size_t total = lxer_get_total_file_line();
-  size_t len = 0;
-  size_t prev = 0;
-  bool end = false;
+  size_t j = 0;
   bool exit = false;
-  int j=0;
 
-  for(size_t i=0;i<total && !exit;i++){
-    end = false;
-    for(j=0;j<l.file_word->len-prev && !end;j++){
-      if(l.file_word->string[prev+j] == '\n'){
-        end = true;
+  while(!exit && j < l.file_word->len){
+    if(l.file_word->string[j] == '\n'){
+      count += 1;
+      if(str <= &l.file_word->string[j]){
+        exit = true;
       }
     }
-
-    if(str > &l.file_word->string[prev] && str < &l.file_word->string[prev+j]){
-      exit = true;
-    }else{
-      count += 1;
-    }
-    prev = j+1;
+    j+=1; 
   }
 
   return count;
@@ -591,15 +582,21 @@ bool lxer_separator_expect_comment() {
 }  
 
 
-Array* lxer_locate_occurences(char*word){
+Array* lxer_locate_occurences(char*word, bool separator){
   Array* arr;
   char*switcher = l.file_word->string;
 
   char buff[256];
 
   strcpy(buff, word);
-  buff[strlen(word)] = ' ';
-  buff[strlen(word)+1] = '\0';
+
+  if(separator){
+    buff[strlen(word)] = ' ';
+    buff[strlen(word)+1] = '\0';
+  }else{
+    buff[strlen(word)] = '\0';
+  }
+  
 
   array_new(arr);
   for(size_t i=0;i<l.file_word->len;i++){
