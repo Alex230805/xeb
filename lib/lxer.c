@@ -83,7 +83,6 @@ size_t lxer_get_total_file_line(){
   return count;
 }
 size_t lxer_get_file_line_from_ptr(char*str){
-  TODO("Check this function lxer_get_file_line_from_ptr\n");
 
   size_t count = 0;
   size_t total = lxer_get_total_file_line();
@@ -95,7 +94,7 @@ size_t lxer_get_file_line_from_ptr(char*str){
 
   for(size_t i=0;i<total && !exit;i++){
     end = false;
-    for(j=0;j<l.file_word->len && !end;j++){
+    for(j=0;j<l.file_word->len-prev && !end;j++){
       if(l.file_word->string[prev+j] == '\n'){
         end = true;
       }
