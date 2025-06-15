@@ -35,7 +35,6 @@ StringBuilder* read_file(char*path){
   sb = (StringBuilder*)malloc(sizeof(StringBuilder));
   FILE * fp;
   fp = fopen(path, "r");
-  bool end = false;
   int len = 0;
   if(fp == NULL){
     fprintf(stderr, "Unable to open instruction file: %s : %d\n", strerror(errno), errno);
