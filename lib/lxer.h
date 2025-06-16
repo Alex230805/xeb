@@ -43,7 +43,9 @@ X(LXR_STRING_TYPE)\
   X(LXR_DOUBLE_DOTS)\
   X(LXR_DOT)\
   X(LXR_QUOTE)\
-  X(LXR_DOUBLE_QUOTE)
+  X(LXR_DOUBLE_QUOTE)\
+  X(LXR_TYPE_ASSIGN)
+
 
 #define TAG_BRK()\
   X(LXR_OPEN_BRK)\
@@ -174,6 +176,7 @@ static char* token_table_lh[] = {
   [LXR_DOT] = ".",
   [LXR_QUOTE] = "'",
   [LXR_DOUBLE_QUOTE] = "\"",
+  [LXR_TYPE_ASSIGN] = ":",
 
   [LXR_OPEN_BRK] = "(",
   [LXR_CLOSE_BRK] = ")",
