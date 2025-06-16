@@ -29,24 +29,23 @@ void gc_push(tb_gc*gc, void* address){
 
 #endif
 
-StringBuilder* read_file(char*path){
+StringBuilder* read_file(Arena_header* ah, const char*path){
   if(DEBUG) DINFO("Reading file", NULL); 
   StringBuilder *sb;
-  sb = (StringBuilder*)malloc(sizeof(StringBuilder));
+ 
+  sb = (StringBuilder*)arena_alloc(ah,sizeof(StringBuilder));
   FILE * fp;
   fp = fopen(path, "r");
-  int len = 0;
   if(fp == NULL){
-    fprintf(stderr, "Unable to open instruction file: %s : %d\n", strerror(errno), errno);
-    exit(1);
+    fprintf(stderr, "Unable to open instruction file: %s\n", strerror(errno));
+    exit(errno);
   }
   fseek(fp, 0, SEEK_END);
   sb->len = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-  //MALLOC(sizeof(char)*sb->len, sb->string, char*);
-  sb->string = (char*)malloc(sizeof(char)*sb->len);
-  fread(sb->string,sizeof(char), sb->len,fp);
-  sb->string[len] = '\0'; 
+  rewind(fp);
+  sb->string = (char*)arena_alloc(ah,sizeof(char)*sb->len);
+  fread(sb->string, sizeof(char), sb->len,fp);
+  sb->string[sb->len] = '\0';
   fclose(fp);
   return sb;
 }
@@ -125,9 +124,7 @@ void* arena_alloc(Arena_header* arenah, size_t size){
   if(arenah->arena_count < 1){
     arena_create(arenah,PAGE_SIZE, PAGE_NUMBER);
   }
-
   Arena_alloc* arena = arenah->cursor;
-
   if(arena->free_pages < 1){
     int page_number = (int)size/(arena->page_size*arena->pages);
     if(page_number > 0){

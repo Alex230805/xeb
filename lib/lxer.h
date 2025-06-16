@@ -11,69 +11,95 @@
 #include <misc.h>
 
 
+#define TAG_MATH()\
+  X(LXR_SUM_SYMB)\
+  X(LXR_SUB_SYMB)\
+  X(LXR_MLT_SYMB)\
+  X(LXR_DIV_SYMB)\
+  X(LXR_GRT_SYBM)\
+  X(LXR_LST_SYBM)\
+  X(LXR_EQL_SYBM)
+
+#define TAG_COMMENT()\
+  X(LXR_LINE_COMMENT)\
+  X(LXR_OPEN_COMMENT)\
+  X(LXR_CLOSE_COMMENT)
+
+
+#define TAG_TYPE()\
+X(LXR_STRING_TYPE)\
+  X(LXR_INT_TYPE)\
+  X(LXR_DUBLE_TYPE)\
+  X(LXR_FLOAT_TYPE)\
+  X(LXR_CHAR_TYPE)\
+  X(LXR_POINTER_TYPE)\
+  X(LXR_VOID_TYPE)
+
+
+#define TAG_SEP()\
+  X(LXR_COMMA)\
+  X(LXR_SEMICOLON)\
+  X(LXR_DOUBLE_DOTS)\
+  X(LXR_DOT)\
+  X(LXR_QUOTE)\
+  X(LXR_DOUBLE_QUOTE)
+
+#define TAG_BRK()\
+  X(LXR_OPEN_BRK)\
+  X(LXR_CLOSE_BRK)\
+  X(LXR_OPEN_CRL_BRK)\
+  X(LXR_CLOSE_CRL_BRK)\
+  X(LXR_OPEN_SQR_BRK)\
+  X(LXR_CLOSE_SQR_BRK)
+  
+#define TAG_STATEMENT()\
+  X(LXR_IF_STATEMENT)\
+  X(LXR_WHILE_STATEMENT)\
+  X(LXR_RET_STATEMENT)\
+  X(LXR_ASSIGNMENT)\
+  X(LXT_EXPORT_STATEMENT)\
+  X(LXR_MODULE_STATEMENT)\
+  X(LXR_IMPORT_STATEMENT)
+
+#define TAG_MISC()\
+  X(LXR_RETURN_ARROW)\
+  X(LXR_DEF_STATEMENT)\
+  X(LXR_STRUCT)\
+  X(LXR_ENUM)\
+  X(LXR_FN)\
+  X(LXR_CAST)\
+  X(LXR_AS_CAST)
+
+
 // lexer tokenizer
+#define X(name) name,
 
 typedef enum {
-  LXR_COMMA = 0,
-  LXR_SEMICOLON,
-
-  LXR_OPEN_BRK = 10,
-  LXR_CLOSE_BRK,
-  LXR_OPEN_CRL_BRK,
-  LXR_OPEN_SQR_BRK,
-  LXR_CLOSE_SQR_BRK,
-  LXR_QUOTE,
-  LXR_DOUBLE_QUOTE,
-  LXR_DOT,
-
-  LXR_IF_STATEMENT = 20,
-  LXR_WHILE_STATEMENT,
-  LXR_RET_STATEMENT,
-  LXR_ASSIGNMENT,
-
-  LXR_RETURN_ARROW = 30,
-
-  LXR_DEF_STATEMENT = 40,
-  LXT_EXPORT_STATEMENT,
-  LXR_MODULE_STATEMENT,
-  LXR_IMPORT_STATEMENT,
-  LXR_DOUBLE_DOTS,
-  LXR_STRUCT,
-  LXR_ENUM,
-  LXR_FN,
-  LXR_CAST,
-  LXR_AS_CAST,
-  
-  LXR_STRING_TYPE = 50,
-  LXR_INT_TYPE,
-  LXR_DUBLE_TYPE,
-  LXR_FLOAT_TYPE,
-  LXR_CHAR_TYPE,
-  LXR_POINTER_TYPE,
-
-  LXR_LINE_COMMENT = 60,
-  LXR_OPEN_COMMENT,
-  LXR_CLOSE_COMMENT,
-
-
-  LXR_SUM_SYMB = 70,
-  LXR_SUB_SYMB,
-  LXR_MLT_SYMB,
-  LXR_DIV_SYMB,
-  LXR_GRT_SYBM,
-  LXR_LST_SYBM,
-  LXR_EQL_SYBM,
-
-  /*
-   * Add more token for more 
-   * funtionality
-   *
-   */
-
-  LXR_END_LXR = 256
+  TAG_MATH()
+  TAG_SEP()
+  TAG_COMMENT()
+  TAG_BRK()
+  TAG_TYPE()
+  TAG_STATEMENT()
+  TAG_MISC()
+  TOKEN_TABLE_END
 }LXR_TOKENS;
 
-const char* TOKEN_WD[LXR_END_LXR];
+#undef X
+
+#define X(name) name,
+
+static const LXR_TOKENS token_array[] = {
+  TAG_MATH()
+  TAG_TYPE()
+  TAG_COMMENT()
+  TAG_SEP()
+  TAG_BRK()
+  TAG_STATEMENT()
+  TAG_MISC()
+};
+
+#undef X
 
 // data structure that hold 
 // the token associated with a specific 
@@ -83,8 +109,7 @@ const char* TOKEN_WD[LXR_END_LXR];
 typedef struct{
   LXR_TOKENS token;
   char* byte_pointer;
-  size_t word_size;
-}TOKEN_SLICE;
+}token_slice;
 
 // lxer data structure
 
@@ -97,15 +122,70 @@ typedef struct{
   char*   source;
   size_t  source_len;
 
-  char* tokenixer_rh[LXR_END_LXR];
-  
-  TOKEN_SLICE* stream_out;
+  token_slice** stream_out;
   size_t       stream_out_len;
+  Arena_header lxer_ah;
+
 }lxer_head;
 
 
-void lxer_start_lexing(lxer_head* lh);
+static char* token_table_lh[] = {
+  [LXR_SUM_SYMB] = "+",
+  [LXR_SUB_SYMB] = "-",
+  [LXR_MLT_SYMB] = "*",
+  [LXR_DIV_SYMB] = "/",
+  [LXR_GRT_SYBM] = ">",
+  [LXR_LST_SYBM] = "<",
+  [LXR_EQL_SYBM] = "==",
 
+  [LXR_LINE_COMMENT] = "--",
+  [LXR_OPEN_COMMENT] = "-/",
+  [LXR_CLOSE_COMMENT] = "/-",
+
+  [LXR_STRING_TYPE] = "string ",
+  [LXR_INT_TYPE] = "int ",
+  [LXR_DUBLE_TYPE] = "double ",
+  [LXR_FLOAT_TYPE] = "float ",
+  [LXR_CHAR_TYPE] = "char ",
+  [LXR_POINTER_TYPE] = "ptr ",
+  [LXR_VOID_TYPE] = "void",
+
+  [LXR_COMMA] = ",",
+  [LXR_SEMICOLON] = ";",
+  [LXR_DOUBLE_DOTS] = "::",
+  [LXR_DOT] = ".",
+  [LXR_QUOTE] = "'",
+  [LXR_DOUBLE_QUOTE] = "\"",
+
+  [LXR_OPEN_BRK] = "(",
+  [LXR_CLOSE_BRK] = ")",
+  [LXR_OPEN_CRL_BRK] = "{",
+  [LXR_CLOSE_CRL_BRK] = "}",
+  [LXR_OPEN_SQR_BRK] = "[",
+  [LXR_CLOSE_SQR_BRK] = "]",
+
+  [LXR_IF_STATEMENT] = "if",
+  [LXR_WHILE_STATEMENT] = "while",
+  [LXR_RET_STATEMENT] = "ret",
+  [LXR_ASSIGNMENT] = "=",
+  [LXT_EXPORT_STATEMENT] = "export ",
+  [LXR_MODULE_STATEMENT] = "module ",
+  [LXR_IMPORT_STATEMENT] = "import ",
+
+  [LXR_RETURN_ARROW] = "->",
+  [LXR_DEF_STATEMENT] = "def ",
+  [LXR_STRUCT] = "struct ",
+  [LXR_ENUM] = "enum ",
+  [LXR_FN] = "fn ",
+  [LXR_CAST] = "|",
+  [LXR_AS_CAST] = " as "
+};
+
+
+static size_t token_table_length = TOKEN_TABLE_END;
+
+void lxer_start_lexing(lxer_head* lh, char* source_file);
+void lxer_get_lxer_content(lxer_head*lh);
 
 #ifndef LXER_IMPLEMENTATION
 #define LXER_IMPLEMENTATION
