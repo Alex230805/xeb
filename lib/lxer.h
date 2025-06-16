@@ -11,6 +11,7 @@
 #include <misc.h>
 
 
+
 #define TAG_MATH()\
   X(LXR_SUM_SYMB)\
   X(LXR_SUB_SYMB)\
@@ -67,7 +68,6 @@ X(LXR_STRING_TYPE)\
   X(LXR_STRUCT)\
   X(LXR_ENUM)\
   X(LXR_FN)\
-  X(LXR_CAST)\
   X(LXR_AS_CAST)
 
 
@@ -76,11 +76,23 @@ X(LXR_STRING_TYPE)\
 
 typedef enum {
   TAG_MATH()
+  TAG_MATH_END,
+  
   TAG_SEP()
+  TAG_SEP_END,
+
   TAG_COMMENT()
+  TAG_COMMENT_END,
+
   TAG_BRK()
+  TAG_BRK_END,
+
   TAG_TYPE()
+  TAG_TYPE_END,
+
   TAG_STATEMENT()
+  TAG_STATEMENT_END,
+
   TAG_MISC()
   TOKEN_TABLE_END
 }LXR_TOKENS;
@@ -91,11 +103,17 @@ typedef enum {
 
 static const LXR_TOKENS token_array[] = {
   TAG_MATH()
-  TAG_TYPE()
+  TAG_MATH_END,
   TAG_COMMENT()
+  TAG_COMMENT_END, 
+  TAG_TYPE()
+  TAG_TYPE_END,
   TAG_SEP()
+  TAG_SEP_END,
   TAG_BRK()
+  TAG_BRK_END,
   TAG_STATEMENT()
+  TAG_STATEMENT_END,
   TAG_MISC()
 };
 
@@ -121,11 +139,11 @@ typedef struct{
 typedef struct{
   char*   source;
   size_t  source_len;
+  size_t  lxer_tracker;
 
   token_slice** stream_out;
   size_t       stream_out_len;
   Arena_header lxer_ah;
-
 }lxer_head;
 
 
@@ -137,11 +155,11 @@ static char* token_table_lh[] = {
   [LXR_GRT_SYBM] = ">",
   [LXR_LST_SYBM] = "<",
   [LXR_EQL_SYBM] = "==",
-
+  
   [LXR_LINE_COMMENT] = "--",
   [LXR_OPEN_COMMENT] = "-/",
   [LXR_CLOSE_COMMENT] = "/-",
-
+  
   [LXR_STRING_TYPE] = "string ",
   [LXR_INT_TYPE] = "int ",
   [LXR_DUBLE_TYPE] = "double ",
@@ -149,7 +167,7 @@ static char* token_table_lh[] = {
   [LXR_CHAR_TYPE] = "char ",
   [LXR_POINTER_TYPE] = "ptr ",
   [LXR_VOID_TYPE] = "void",
-
+  
   [LXR_COMMA] = ",",
   [LXR_SEMICOLON] = ";",
   [LXR_DOUBLE_DOTS] = "::",
@@ -177,7 +195,6 @@ static char* token_table_lh[] = {
   [LXR_STRUCT] = "struct ",
   [LXR_ENUM] = "enum ",
   [LXR_FN] = "fn ",
-  [LXR_CAST] = "|",
   [LXR_AS_CAST] = " as "
 };
 
@@ -186,6 +203,76 @@ static size_t token_table_length = TOKEN_TABLE_END;
 
 void lxer_start_lexing(lxer_head* lh, char* source_file);
 void lxer_get_lxer_content(lxer_head*lh);
+
+bool lxer_next_token(lxer_head*lh);
+bool lxer_is_math(LXR_TOKENS token);
+bool lxer_is_comment(LXR_TOKENS token);
+bool lxer_is_type(LXR_TOKENS token);
+bool lxer_is_sep(LXR_TOKENS token);
+bool lxer_is_brk(LXR_TOKENS token);
+bool lxer_is_statement(LXR_TOKENS token);
+bool lxer_is_misc(LXR_TOKENS token);
+
+bool lxer_math_expect_math(lxer_head*lh);
+bool lxer_math_expect_comment(lxer_head*lh);
+bool lxer_math_expect_type(lxer_head*lh);
+bool lxer_math_expect_sep(lxer_head*lh);
+bool lxer_math_expect_brk(lxer_head*lh);
+bool lxer_math_expect_statement(lxer_head*lh);
+bool lxer_math_expect_misc(lxer_head*lh);
+
+bool lxer_comment_expect_math(lxer_head*lh);
+bool lxer_comment_expect_comment(lxer_head*lh);
+bool lxer_comment_expect_type(lxer_head*lh);
+bool lxer_comment_expect_sep(lxer_head*lh);
+bool lxer_comment_expect_brk(lxer_head*lh);
+bool lxer_comment_expect_statement(lxer_head*lh);
+bool lxer_comment_expect_misc(lxer_head*lh);
+
+bool lxer_type_expect_math(lxer_head*lh);
+bool lxer_type_expect_comment(lxer_head*lh);
+bool lxer_type_expect_type(lxer_head*lh);
+bool lxer_type_expect_sep(lxer_head*lh);
+bool lxer_type_expect_brk(lxer_head*lh);
+bool lxer_type_expect_statement(lxer_head*lh);
+bool lxer_type_expect_misc(lxer_head*lh);
+
+bool lxer_sep_expect_math(lxer_head*lh);
+bool lxer_sep_expect_comment(lxer_head*lh);
+bool lxer_sep_expect_type(lxer_head*lh);
+bool lxer_sep_expect_sep(lxer_head*lh);
+bool lxer_sep_expect_brk(lxer_head*lh);
+bool lxer_sep_expect_statement(lxer_head*lh);
+bool lxer_sep_expect_misc(lxer_head*lh);
+
+
+bool lxer_brk_expect_math(lxer_head*lh);
+bool lxer_brk_expect_comment(lxer_head*lh);
+bool lxer_brk_expect_type(lxer_head*lh);
+bool lxer_brk_expect_sep(lxer_head*lh);
+bool lxer_brk_expect_brk(lxer_head*lh);
+bool lxer_brk_expect_statement(lxer_head*lh);
+bool lxer_brk_expect_misc(lxer_head*lh);
+
+
+bool lxer_statement_expect_math(lxer_head*lh);
+bool lxer_statement_expect_comment(lxer_head*lh);
+bool lxer_statement_expect_type(lxer_head*lh);
+bool lxer_statement_expect_sep(lxer_head*lh);
+bool lxer_statement_expect_brk(lxer_head*lh);
+bool lxer_statement_expect_statement(lxer_head*lh);
+bool lxer_statement_expect_misc(lxer_head*lh);
+
+bool lxer_misc_expect_math(lxer_head*lh);
+bool lxer_misc_expect_comment(lxer_head*lh);
+bool lxer_misc_expect_type(lxer_head*lh);
+bool lxer_misc_expect_sep(lxer_head*lh);
+bool lxer_misc_expect_brk(lxer_head*lh);
+bool lxer_misc_expect_statement(lxer_head*lh);
+bool lxer_misc_expect_misc(lxer_head*lh);
+
+
+
 
 #ifndef LXER_IMPLEMENTATION
 #define LXER_IMPLEMENTATION
