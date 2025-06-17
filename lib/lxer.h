@@ -10,7 +10,8 @@
 #include <stdbool.h>
 #include <misc.h>
 
-
+#define LXER_NOT_IMPLEMENTED(name)\
+  fprintf(stdout, "[XEB Internal Message]: "name" is still under development!\n");
 
 #define TAG_MATH()\
   X(LXR_SUM_SYMB)\
@@ -275,6 +276,10 @@ bool lxer_misc_expect_statement(lxer_head*lh);
 bool lxer_misc_expect_misc(lxer_head*lh);
 
 
+
+char*   lxer_get_lh(lxer_head* lh);
+char*   lxer_get_rh(lxer_head*lh);
+char**  lxer_get_rh_lh(lxer_head*lh);
 
 
 #ifndef LXER_IMPLEMENTATION

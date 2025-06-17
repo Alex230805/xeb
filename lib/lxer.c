@@ -30,7 +30,6 @@ void lxer_start_lexing(lxer_head* lh, char * source){
           break;
         default:
           ignore_lex = false;
-          //DINFO("Lexing process, checking reference with token %d: %s", token, token_table_lh[token], NULL);
           break;
       } 
       //////////////////////////////////////////
@@ -71,7 +70,7 @@ void lxer_get_lxer_content(lxer_head*lh){
   for(size_t i=0;i<lh->stream_out_len;i++){
     LXR_TOKENS tok = lh->stream_out[i]->token;
     char* pointer = lh->stream_out[i]->byte_pointer;
-    printf("token found at byte_stream[%ld]: token_tablep[%d] -> %s\n", pointer-lh->source, tok,token_table_lh[tok]);
+    printf("\ttoken found at byte_stream[%ld]: token_tablep[%d] -> %s\n", pointer-lh->source, tok,token_table_lh[tok]);
   }
 }
 
@@ -614,4 +613,31 @@ bool lxer_misc_expect_misc(lxer_head*lh){
 }
 
 
+char* lxer_get_lh(lxer_head* lh){
+  char* buffer = (char*)arena_alloc(&lh->lxer_ah, sizeof(char)*256);
+  buffer[0] = '\0';
 
+  LXER_NOT_IMPLEMENTED("'lxer_get_lh()'");
+
+  return buffer;
+}
+
+
+char* lxer_get_rh(lxer_head*lh){
+  char* buffer = (char*)arena_alloc(&lh->lxer_ah, sizeof(char)*256);
+  buffer[0] = '\0';
+
+  LXER_NOT_IMPLEMENTED("'lxer_get_rh()'");
+
+  return buffer;
+}
+
+
+char** lxer_get_rh_lh(lxer_head*lh){
+  char** buffer_array = (char**)arena_alloc(&lh->lxer_ah, sizeof(char*)*2);
+
+  buffer_array[0] = lxer_get_rh(lh); 
+  buffer_array[1] = lxer_get_lh(lh);
+
+  return buffer_array;
+}
