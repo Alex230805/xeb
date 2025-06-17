@@ -10,6 +10,7 @@
 
 
 #define ERROR_REPORT_BUFFER_DEFAULT_LEN 10
+#define ERROR_BUFFER_DEFAULT_LEN 256
 
 #define XEB_TODO(name)\
   fprintf(stdout, "[XEB Internal TODO]: ");\
@@ -59,17 +60,22 @@ typedef struct{
 }xeb_error_box;
 
 typedef struct{
-  // current lexer 
+  // compiler lexer and source code
   lxer_head lh;
   char* source_code;
   size_t source_len;
   
+  // compiler error array, return error after the compilation
   xeb_error_box** final_error_report;
   size_t error_report_len;
   size_t error_tracker;
 
 }xebc;
 
+// public error buffer, used only if the build system mode is enabled
+static XEB_COMPILER_ERRNO *error_buffer;
+static size_t* error_buffer_tracker;
+static bool*   error_buffer_package_sent;
 
 static xebc compiler = {0};
 static Arena_header compiler_ah = {0};
@@ -79,8 +85,9 @@ void xeb_helper();
 void xeb_error_init_handler(); 
 bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line);
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
-
 void xeb_error_report();
+void xeb_error_send_error(XEB_COMPILER_ERRNO err);
+void xeb_error_get_public_buffer_pointer();
 
 void xeb_load_file(const char* source_file);
 void xeb_close_compiler();

@@ -16,6 +16,11 @@ void xeb_error_init_handler(){
   compiler.final_error_report = (xeb_error_box**)arena_alloc(&compiler_ah,sizeof(xeb_error_box*)*ERROR_REPORT_BUFFER_DEFAULT_LEN);
   compiler.error_report_len = ERROR_REPORT_BUFFER_DEFAULT_LEN;
   compiler.error_tracker = 0;
+  error_buffer = (XEB_COMPILER_ERRNO*)arena_alloc(&compiler_ah, sizeof(XEB_COMPILER_ERRNO)*ERROR_BUFFER_DEFAULT_LEN);
+  error_buffer_tracker = (size_t*)arena_alloc(&compiler_ah, sizeof(size_t));
+  error_buffer_package_sent = (bool*)arena_alloc(&compiler_ah, sizeof(bool));
+  *error_buffer_package_sent = false;
+  *error_buffer_tracker = 0;
 }
 
 bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line){
@@ -64,15 +69,40 @@ char* xeb_error_get_message(XEB_COMPILER_ERRNO err){
   return error_message;
 }
 
-
 void xeb_error_report(){
   if(compiler.error_tracker > 0){
     fprintf(stderr, "Error report: \n");
     for(size_t i=0;i<compiler.error_tracker; i++){
-      XEB_TODO("Implement error printer report");
+      fprintf(stderr, "Error in line %zu: \n\t%s\n",compiler.final_error_report[i]->line_pointer, compiler.final_error_report[i]->xeb_error_to_string);
     }
   }
+  return;
 }
+
+void xeb_error_send_error(XEB_COMPILER_ERRNO err){
+  error_buffer[*error_buffer_tracker] = err;
+  *error_buffer_tracker += 1;
+  *error_buffer_package_sent = true;
+  /*
+   * sent package: this flag is used to track the status of the public error buffer used by external build system or build environment. By checking the flag "error_buffer_package_sent" the build system can check for new error during the compilation and sent back to the user custom error messages or custom action when an error occur. This function is activated if the compiler is called with the build system flag activated.
+   */
+
+  if(*error_buffer_tracker == ERROR_BUFFER_DEFAULT_LEN){
+    *error_buffer_tracker = 0;
+  }
+  return;
+}
+
+void xeb_error_get_public_buffer_pointer(){
+  // send to stdout the pointer to the internal static 
+  // buffer for public error handling
+
+  fprintf(stdout,"%zx", (size_t)error_buffer);
+  fprintf(stdout,"%zx", (size_t)error_buffer_tracker);
+  fprintf(stdout,"%zx", (size_t)error_buffer_package_sent);
+ 
+}
+
 
 void xeb_close_compiler(){
   NOTY("XEB Compiler", "Compilation completed, exiting..", NULL);
