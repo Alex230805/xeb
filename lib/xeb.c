@@ -97,9 +97,9 @@ void xeb_error_get_public_buffer_pointer(){
   // send to stdout the pointer to the internal static 
   // buffer for public error handling
 
-  fprintf(stdout,"%zx", (size_t)error_buffer);
-  fprintf(stdout,"%zx", (size_t)error_buffer_tracker);
-  fprintf(stdout,"%zx", (size_t)error_buffer_package_sent);
+  fprintf(stdout,"%zu", (size_t)error_buffer);
+  fprintf(stdout,"%zu", (size_t)error_buffer_tracker);
+  fprintf(stdout,"%zu", (size_t)error_buffer_package_sent);
  
 }
 

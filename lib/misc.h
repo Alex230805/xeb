@@ -21,8 +21,8 @@
 
 #if !(defined(PAGE_SIZE) || defined(PAGE_NUMBER))
   
-  #define PAGE_SIZE 24 // in bytes   
-  #define PAGE_NUMBER 4096 // number of pages per arena. The length of the arena would be PAGE_SIZE*PAGE_NUMBER.
+  #define PAGE_SIZE 1 // in bytes   
+  #define PAGE_NUMBER 5 // number of pages per arena. The length of the arena would be PAGE_SIZE*PAGE_NUMBER.
 
 #endif 
 

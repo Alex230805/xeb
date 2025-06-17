@@ -5,7 +5,7 @@
 #include <misc.h>
 
 int main(){
-  xeb_load_file("./code_example/7_multiple_return.x");
+  xeb_load_file("./code_example/5_string_concatenation.x");
   xeb_error_init_handler();
 
   // get public buffer pointer to read incoming error messages during the compilation to handle it via build system for custom configuration.
@@ -13,7 +13,7 @@ int main(){
   // 
   //xeb_error_get_public_buffer_pointer();
 
-
+  xeb_error_report();
   xeb_close_compiler();
   return 0;
 }
