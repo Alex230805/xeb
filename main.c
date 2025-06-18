@@ -44,7 +44,7 @@ int main(int argc, char** argv){
   strcpy(source_file_path, CF_DEFAULT_INPUT_FILE_NAME);
   strcpy(module_path, CF_DEFAULT_MODULE_PATH);
   bool external_builder_integration = false;
-  
+  bool file_provided = false;
 
   if(argc > 1 && (strcmp(argv[1], CF_HELPER_0) == 0 || strcmp(argv[1], CF_HELPER_1) == 0)){
     //helper integration
@@ -70,6 +70,7 @@ int main(int argc, char** argv){
       if(strcmp(argv[i], CF_SOURCE_FILE_0) == 0 || strcmp(argv[i], CF_SOURCE_FILE_1) == 0){
         if(i+1 < argc){
           strcpy(source_file_path, argv[i+1]);
+          file_provided = true;
         }else{
           xebc_wrong_flag_error(argv[i]);
         }
@@ -87,7 +88,7 @@ int main(int argc, char** argv){
 
     }
     for(int i=0;i<argc;i++){
-      if(strstr(argv[i], ".x") != NULL){
+      if(!file_provided && strstr(argv[i], ".x") != NULL){
         fprintf(stderr,"Warning: the source code file must be provided with the '%s', otherwhise the compiler will search the first file in the current path that is named '%s'. Try the '%s' flag for more informations\n\n", CF_SOURCE_FILE_0, CF_DEFAULT_INPUT_FILE_NAME, CF_HELPER_0);
       }
     }

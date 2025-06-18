@@ -25,11 +25,97 @@ void xeb_load_output_filename(char* filename){
 void xeb_start_compiler(char*module_path){
   NOTY("XEB Compiler","Starting compilation process", NULL);
   compiler.module_path = module_path;
-
   lxer_start_lexing(&compiler.lh, compiler.source_code);
-  if(DEBUG) lxer_get_lxer_content(&compiler.lh);
+  xeb_error_calculate_total_lines();
+  //if(DEBUG) lxer_get_lxer_content(&compiler.lh);
 
+  while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
+   
+    //XEB_PUSH_ERROR(XEB_NOT_A_FUNCTION);
+
+    if(lxer_is_misc(lxer_get_current_token(&compiler.lh))){
+      LXR_TOKENS misc_token = lxer_get_current_token(&compiler.lh);
+      switch(misc_token){
+        case LXR_RETURN_ARROW:
+
+          break;
+
+        case LXR_DEF_STATEMENT:
+
+          break;
+        case LXR_STRUCT:
+
+          break;
+        case LXR_ENUM:
+
+          break;
+        case LXR_FN:
+          compilation_table.start_function_definition = true;
+          char* function_name = lxer_get_rh(false);
+          if(strlen(function_name) < 1){
+            XEB_PUSH_ERROR(XEB_WRONG_DEFINITION);
+            XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX);
+          }
+          break;
+        case LXR_AS_CAST:
+
+
+          break;
+        default: break;
+      }
+    }
+
+
+
+    lxer_next_token(&compiler.lh);
+  }
 }
+
+
+void xeb_error_calculate_total_lines(){
+  NOTY("XEB Error Handler","Calculating total code line", NULL);
+  if(compiler.source_lines == NULL){
+    compiler.source_lines = (line_slice*)arena_alloc(&compiler_ah, sizeof(line_slice)*DEFAULT_LINE_SLICE_LEN);
+    compiler.source_lines_len = DEFAULT_LINE_SLICE_LEN;
+    compiler.loaded_slice = 0;
+  }
+  size_t global_line_counter = 0;
+  char* start_line = &compiler.source_code[0];
+  char* cursor = NULL; 
+  
+
+  while(start_line < &compiler.source_code[0] + compiler.source_len){
+    cursor = strchr(start_line, '\n');
+    if(cursor != NULL){
+      compiler.source_lines[compiler.loaded_slice].pointer = start_line;
+      compiler.source_lines[compiler.loaded_slice].line = global_line_counter;
+      global_line_counter+=1;
+      start_line = cursor+1; 
+      compiler.loaded_slice+=1;
+      
+      if(compiler.loaded_slice == compiler.source_lines_len){
+        line_slice* new_source_lines = (line_slice*)arena_alloc(&compiler_ah,sizeof(line_slice)*compiler.source_lines_len*2);
+        size_t new_size = compiler.source_lines_len*2;
+        for(size_t i=0;i<compiler.source_lines_len;i++){
+          new_source_lines[i] = compiler.source_lines[i];
+        }
+        compiler.source_lines = new_source_lines;
+        compiler.source_lines_len = new_size;
+      }
+    }
+  }
+}
+
+
+size_t xeb_error_get_line(char*ptr){
+  for(size_t i=1;i<compiler.loaded_slice;i++){
+    if(compiler.source_lines[i].pointer > ptr){
+      return compiler.source_lines[i].line;
+    }
+  }
+  return -1;
+}
+
 
 
 void xeb_error_init_handler(){

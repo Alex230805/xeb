@@ -83,6 +83,14 @@ bool lxer_next_token(lxer_head*lh){
 }
 
 
+LXR_TOKENS lxer_get_current_token(lxer_head*lh){
+  return lh->stream_out[lh->lxer_tracker]->token;
+}
+
+char* lxer_get_current_pointer(lxer_head*lh){
+  return lh->stream_out[lh->lxer_tracker]->byte_pointer;
+}
+
 bool lxer_is_math(LXR_TOKENS token){
   if(token < TAG_MATH_END && token >= 0) return true;
   return false;

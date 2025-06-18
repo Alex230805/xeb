@@ -15,6 +15,8 @@
 #define HEB_DISABLED false
 #define HEB_ENABLED true
 
+#define DEFAULT_LINE_SLICE_LEN 10
+
 #define XEB_TODO(name)\
   fprintf(stdout, "[XEB Internal TODO]: ");\
 
@@ -24,6 +26,9 @@
 #define XEB_NOT_IMPLEMENTED(name)\
   fprintf(stdout, "[XEB Internal Message]: "name" is still under development!\n");
 
+
+#define XEB_PUSH_ERROR(errno)\
+  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)));
 
 // internal error messag, shared between the internal stdbuffer and the error handler
 
@@ -38,6 +43,9 @@
   X(XEB_NO_RETURN_PROVIDED)\
   X(XEB_MODULE_NOT_FOUND)\
   X(XEB_MISSING_ARGUMENTS)\
+  X(XEB_NO_RETURN_ARROW_PROVIDED)\
+  X(XEB_INCOMPLETE_SYNTAX)\
+  X(XEB_MISSING_BRACKETS)\
   X(XEB_OUT_OF_BOUND)\
   X(XEB_MISSING_TYPE)\
   X(XEB_WRONG_RETURN_TYPE)\
@@ -63,12 +71,23 @@ typedef struct{
 }xeb_error_box;
 
 typedef struct{
+  char* pointer;
+  size_t line;
+}line_slice;
+
+
+typedef struct{
   // compiler lexer and source code
   lxer_head lh;
   char* source_code;
   size_t source_len;
   char *output_filename;
   char*module_path;
+  
+  line_slice* source_lines;
+  size_t source_lines_len;
+  size_t loaded_slice;
+
 
   // compiler error array, return error after the compilation
   xeb_error_box** final_error_report;
@@ -77,10 +96,16 @@ typedef struct{
 
 }xebc;
 
+
+typedef struct{
+  bool start_function_definition;
+}xeb_compilation_table;
+
+
 static xebc compiler = {0};
 static Arena_header compiler_ah = {0};
 static bool hoterror_broadcaster_status = HEB_DISABLED;
-
+static xeb_compilation_table compilation_table = {0};
 
 void xeb_helper();
 
@@ -90,6 +115,9 @@ char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
 void xeb_error_report();
 void xeb_error_send_error(XEB_COMPILER_ERRNO err);
 void xeb_error_open_public_hoterror_broadcaster();
+
+void xeb_error_calculate_total_lines();
+size_t xeb_error_get_line(char*ptr);
 
 bool xeb_load_file(char* source_file);
 void xeb_load_output_filename(char*filename);
