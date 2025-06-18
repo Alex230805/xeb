@@ -277,8 +277,7 @@ bool lxer_misc_expect_misc(lxer_head*lh);
 
 
 
-char*   lxer_get_lh(lxer_head* lh);
-char*   lxer_get_rh(lxer_head*lh);
+char*   lxer_get_rh(lxer_head*lh, bool reverse);
 char**  lxer_get_rh_lh(lxer_head*lh);
 
 

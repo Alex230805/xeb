@@ -613,21 +613,19 @@ bool lxer_misc_expect_misc(lxer_head*lh){
 }
 
 
-char* lxer_get_lh(lxer_head* lh){
+char* lxer_get_rh(lxer_head* lh, bool reverse){
   char* buffer = (char*)arena_alloc(&lh->lxer_ah, sizeof(char)*256);
-  buffer[0] = '\0';
 
-  LXER_NOT_IMPLEMENTED("'lxer_get_lh()'");
+  size_t tracker = lh->lxer_tracker;
+  if(reverse) tracker-=1;
 
-  return buffer;
-}
-
-
-char* lxer_get_rh(lxer_head*lh){
-  char* buffer = (char*)arena_alloc(&lh->lxer_ah, sizeof(char)*256);
-  buffer[0] = '\0';
-
-  LXER_NOT_IMPLEMENTED("'lxer_get_rh()'");
+  char*pointer = lh->stream_out[tracker]->byte_pointer + strlen(token_table_lh[lh->stream_out[tracker]->token]);
+  while(*pointer < '0') pointer+=1;
+  size_t word_len = 0;
+  while(pointer[word_len] != ' '  && &pointer[word_len] < lh->stream_out[tracker+1]->byte_pointer) word_len+=1;
+  
+  memcpy(&buffer[0],pointer, word_len);
+  buffer[word_len] = '\0';
 
   return buffer;
 }
@@ -636,8 +634,8 @@ char* lxer_get_rh(lxer_head*lh){
 char** lxer_get_rh_lh(lxer_head*lh){
   char** buffer_array = (char**)arena_alloc(&lh->lxer_ah, sizeof(char*)*2);
 
-  buffer_array[0] = lxer_get_rh(lh); 
-  buffer_array[1] = lxer_get_lh(lh);
+  buffer_array[0] = lxer_get_rh(lh, false); 
+  buffer_array[1] = lxer_get_rh(lh, true);
 
   return buffer_array;
 }
