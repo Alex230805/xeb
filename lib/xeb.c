@@ -29,44 +29,12 @@ void xeb_start_compiler(char*module_path){
   xeb_error_calculate_total_lines();
   //if(DEBUG) lxer_get_lxer_content(&compiler.lh);
 
+  function_declaration* fn_dec = NULL;
+  variable_definition* vd = NULL;
+
   while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
    
     //XEB_PUSH_ERROR(XEB_NOT_A_FUNCTION);
-
-    if(lxer_is_misc(lxer_get_current_token(&compiler.lh))){
-      LXR_TOKENS misc_token = lxer_get_current_token(&compiler.lh);
-      switch(misc_token){
-        case LXR_RETURN_ARROW:
-
-          break;
-
-        case LXR_DEF_STATEMENT:
-
-          break;
-        case LXR_STRUCT:
-
-          break;
-        case LXR_ENUM:
-
-          break;
-        case LXR_FN:
-          compilation_table.start_function_definition = true;
-          char* function_name = lxer_get_rh(false);
-          if(strlen(function_name) < 1){
-            XEB_PUSH_ERROR(XEB_WRONG_DEFINITION);
-            XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX);
-          }
-          break;
-        case LXR_AS_CAST:
-
-
-          break;
-        default: break;
-      }
-    }
-
-
-
     lxer_next_token(&compiler.lh);
   }
 }
@@ -190,6 +158,31 @@ void xeb_error_open_public_hoterror_broadcaster(){
   XEB_NOT_IMPLEMENTED("'xeb_error_open_public_hoterror_broadcaster()'");
   hoterror_broadcaster_status = HEB_ENABLED;
 }
+
+void xeb_function_declaration_push(function_declaration* fn_dec){
+  if(fn_dec_table == NULL){
+    fn_dec_table = (function_declaration**)arena_alloc(&compiler_ah,sizeof(function_declaration*)*DEFAULT_FN_DEC_LEN);
+    fn_dec_table_tracker = 0;
+    fn_dec_table_len = DEFAULT_FN_DEC_LEN;
+  }
+
+  fn_dec_table[fn_dec_table_tracker] = fn_dec;
+  fn_dec_table_tracker += 1;
+
+  if(fn_dec_table_tracker == fn_dec_table_len){
+    size_t new_size = fn_dec_table_len *2;
+    function_declaration ** new_fn_table = (function_declaration**)arena_alloc(&compiler_ah,sizeof(function_declaration*)*new_size);
+    for(size_t i = 0;i<fn_dec_table_len;i++){
+      new_fn_table[i] = fn_dec_table[i]; 
+    }
+    fn_dec_table = new_fn_table;
+    fn_dec_table_len = new_size;
+  }
+
+}
+
+
+
 
 void xeb_close_compiler(){
   NOTY("XEB Compiler", "Compilation completed, exiting..", NULL);

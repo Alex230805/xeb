@@ -15,7 +15,13 @@
 #define HEB_DISABLED false
 #define HEB_ENABLED true
 
+#define INCOMPLETE false 
+#define COMPLETE true
+
 #define DEFAULT_LINE_SLICE_LEN 10
+#define DEFAULT_FN_DEC_LEN 64
+
+#define DEFAULT_PARAMETER_DEFINITION_LEN 4
 
 #define XEB_TODO(name)\
   fprintf(stdout, "[XEB Internal TODO]: ");\
@@ -51,7 +57,8 @@
   X(XEB_WRONG_RETURN_TYPE)\
   X(XEB_WRONG_DEFINITION)\
   X(XEB_MISSING_DEFINITION)\
-  X(XEB_NO_SUB_VARIABLE_OR_FUNCTION)
+  X(XEB_NO_SUB_VARIABLE_OR_FUNCTION)\
+  X(XEB_WRONG_SYNTAX)
 
 #define X(name) name,
 
@@ -77,6 +84,22 @@ typedef struct{
 
 
 typedef struct{
+  char* name;
+  LXR_TOKENS type;
+}variable_definition;
+
+typedef struct{
+  char*name;
+  LXR_TOKENS return_type;
+  variable_definition* function_parameter;
+  size_t parameter_len;
+  size_t parameter_tracker;
+  bool definition_status;
+}function_declaration;
+
+
+
+typedef struct{
   // compiler lexer and source code
   lxer_head lh;
   char* source_code;
@@ -97,15 +120,15 @@ typedef struct{
 }xebc;
 
 
-typedef struct{
-  bool start_function_definition;
-}xeb_compilation_table;
 
 
 static xebc compiler = {0};
 static Arena_header compiler_ah = {0};
 static bool hoterror_broadcaster_status = HEB_DISABLED;
-static xeb_compilation_table compilation_table = {0};
+
+static function_declaration** fn_dec_table = {0};
+static size_t fn_dec_table_tracker = 0;
+static size_t fn_dec_table_len = 0;
 
 void xeb_helper();
 
@@ -122,9 +145,9 @@ size_t xeb_error_get_line(char*ptr);
 bool xeb_load_file(char* source_file);
 void xeb_load_output_filename(char*filename);
 
-
 void xeb_start_compiler(char*module_path);
 
+void xeb_function_declaration_push(function_declaration* fn_dec);
 
 void xeb_close_compiler();
 

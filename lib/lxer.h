@@ -29,9 +29,9 @@
 
 
 #define TAG_TYPE()\
-X(LXR_STRING_TYPE)\
+  X(LXR_STRING_TYPE)\
   X(LXR_INT_TYPE)\
-  X(LXR_DUBLE_TYPE)\
+  X(LXR_DOUBLE_TYPE)\
   X(LXR_FLOAT_TYPE)\
   X(LXR_CHAR_TYPE)\
   X(LXR_POINTER_TYPE)\
@@ -163,12 +163,12 @@ static char* token_table_lh[] = {
   [LXR_OPEN_COMMENT] = "-/",
   [LXR_CLOSE_COMMENT] = "/-",
   
-  [LXR_STRING_TYPE] = "string ",
-  [LXR_INT_TYPE] = "int ",
-  [LXR_DUBLE_TYPE] = "double ",
-  [LXR_FLOAT_TYPE] = "float ",
-  [LXR_CHAR_TYPE] = "char ",
-  [LXR_POINTER_TYPE] = "ptr ",
+  [LXR_STRING_TYPE] = "string",
+  [LXR_INT_TYPE] = "int",
+  [LXR_DOUBLE_TYPE] = "double",
+  [LXR_FLOAT_TYPE] = "float",
+  [LXR_CHAR_TYPE] = "char",
+  [LXR_POINTER_TYPE] = "ptr",
   [LXR_VOID_TYPE] = "void",
   
   [LXR_COMMA] = ",",
