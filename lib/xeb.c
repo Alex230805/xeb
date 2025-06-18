@@ -2,25 +2,41 @@
 #include "xeb.h"
 
 
-void xeb_load_file(const char* path){
+bool xeb_load_file(char* path){
   NOTY("XEB Compiler","loading source code", NULL);
+  if(path[strlen(path)-1] != 'x') return false;
   StringBuilder *sb = read_file(&compiler_ah,path);
   compiler.source_code = sb->string;
   compiler.source_len = sb->len;
+  return true;
+}
+
+
+
+void xeb_load_output_filename(char* filename){
+
+  NOTY("XEB Compiler","Loading output filename inside the compiler memory", NULL);
+  compiler.output_filename = filename;
+  return;
+}
+
+
+
+void xeb_start_compiler(char*module_path){
+  NOTY("XEB Compiler","Starting compilation process", NULL);
+  compiler.module_path = module_path;
+
   lxer_start_lexing(&compiler.lh, compiler.source_code);
   if(DEBUG) lxer_get_lxer_content(&compiler.lh);
+
 }
+
 
 void xeb_error_init_handler(){
   if(DEBUG) DINFO("Init error handler",NULL);
   compiler.final_error_report = (xeb_error_box**)arena_alloc(&compiler_ah,sizeof(xeb_error_box*)*ERROR_REPORT_BUFFER_DEFAULT_LEN);
   compiler.error_report_len = ERROR_REPORT_BUFFER_DEFAULT_LEN;
   compiler.error_tracker = 0;
-  error_buffer = (XEB_COMPILER_ERRNO*)arena_alloc(&compiler_ah, sizeof(XEB_COMPILER_ERRNO)*ERROR_BUFFER_DEFAULT_LEN);
-  error_buffer_tracker = (size_t*)arena_alloc(&compiler_ah, sizeof(size_t));
-  error_buffer_package_sent = (bool*)arena_alloc(&compiler_ah, sizeof(bool));
-  *error_buffer_package_sent = false;
-  *error_buffer_tracker = 0;
 }
 
 bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line){
@@ -80,32 +96,17 @@ void xeb_error_report(){
 }
 
 void xeb_error_send_error(XEB_COMPILER_ERRNO err){
-  error_buffer[*error_buffer_tracker] = err;
-  *error_buffer_tracker += 1;
-  *error_buffer_package_sent = true;
-  /*
-   * sent package: this flag is used to track the status of the public error buffer used by external build system or build environment. By checking the flag "error_buffer_package_sent" the build system can check for new error during the compilation and sent back to the user custom error messages or custom action when an error occur. This function is activated if the compiler is called with the build system flag activated.
-   */
-
-  if(*error_buffer_tracker == ERROR_BUFFER_DEFAULT_LEN){
-    *error_buffer_tracker = 0;
-  }
+  XEB_NOT_IMPLEMENTED("'xeb_error_send_error(XEB_COMPILER_ERRNO err)'"); 
   return;
 }
 
-void xeb_error_get_public_buffer_pointer(){
-  // send to stdout the pointer to the internal static 
-  // buffer for public error handling
-
-  fprintf(stdout,"%zu", (size_t)error_buffer);
-  fprintf(stdout,"%zu", (size_t)error_buffer_tracker);
-  fprintf(stdout,"%zu", (size_t)error_buffer_package_sent);
- 
+void xeb_error_open_public_hoterror_broadcaster(){
+  XEB_NOT_IMPLEMENTED("'xeb_error_open_public_hoterror_broadcaster()'");
+  hoterror_broadcaster_status = HEB_ENABLED;
 }
-
 
 void xeb_close_compiler(){
   NOTY("XEB Compiler", "Compilation completed, exiting..", NULL);
-  arena_free(&compiler_ah);
-  arena_free(&compiler.lh.lxer_ah);
+  if(compiler_ah.arena_count >= 1) arena_free(&compiler_ah);
+  if(compiler.lh.lxer_ah.arena_count >= 1) arena_free(&compiler.lh.lxer_ah);
 }

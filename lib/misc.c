@@ -37,7 +37,7 @@ StringBuilder* read_file(Arena_header* ah, const char*path){
   FILE * fp;
   fp = fopen(path, "r");
   if(fp == NULL){
-    fprintf(stderr, "Unable to open instruction file: %s\n", strerror(errno));
+    fprintf(stderr, "Unable to open '%s': %s\n", path,strerror(errno));
     exit(errno);
   }
   fseek(fp, 0, SEEK_END);
