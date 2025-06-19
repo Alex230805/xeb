@@ -4,6 +4,6 @@ module io;
 
 
 
-fn main() -> void {
+fn main(string: name, string: location) -> void {
   ret();
 }

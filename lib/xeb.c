@@ -32,6 +32,7 @@ void xeb_start_compiler(char*module_path){
   function_definition* fn_dec = NULL;
   variable_definition* vd = NULL;
   bool function_scope_open = false;
+  size_t brackets_tracker = 0;
 
   while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
     LXR_TOKENS token = lxer_get_current_token(&compiler.lh);
@@ -41,6 +42,9 @@ void xeb_start_compiler(char*module_path){
         xeb_function_definition_push(fn_dec);
         if(DEBUG) DINFO("Function declaration pushed", NULL);
       }
+    }
+    if(token == LXR_OPEN_CRL_BRK){
+      brackets_tracker += 1;
     }
     lxer_next_token(&compiler.lh);
   }
@@ -60,18 +64,25 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
     fn_def->function_parameter = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*DEFAULT_PARAMETER_DEFINITION_LEN);
     fn_def->parameter_len = DEFAULT_PARAMETER_DEFINITION_LEN;
     fn_def->parameter_tracker = 0;
+    lxer_next_token(&compiler.lh);
 
     while(lxer_get_current_token(&compiler.lh) != LXR_CLOSE_BRK){
       if(lxer_get_current_token(&compiler.lh) == LXR_COMMA) lxer_next_token(&compiler.lh);
       LXR_TOKENS parameter_type = lxer_get_current_token(&compiler.lh);
       if(lxer_is_type(parameter_type) && lxer_type_expect_sep(&compiler.lh)){
         lxer_next_token(&compiler.lh);
+        if(lxer_get_current_token(&compiler.lh) != LXR_TYPE_ASSIGN) { 
+          XEB_PUSH_ERROR(XEB_MISSING_TYPE_ASSIGN,error_present); 
+          XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX,error_present); 
+        }
         char* par_name = lxer_get_rh(&compiler.lh, false);
         if(strlen(par_name) < 1) { XEB_PUSH_ERROR(XEB_MISSING_PARAMETER_NAME,error_present); }
+        
         vd = (variable_definition*)arena_alloc(&compiler_ah, sizeof(variable_definition));
         vd->name = par_name;
         vd->type = parameter_type;
         lxer_next_token(&compiler.lh);
+
         if(lxer_get_current_token(&compiler.lh) == LXR_COMMA && lxer_sep_expect_brk(&compiler.lh)) { XEB_PUSH_ERROR(XEB_WRONG_SYNTAX,error_present); }
         fn_def->function_parameter[fn_def->parameter_tracker] = vd;
         fn_def->parameter_tracker += 1;
