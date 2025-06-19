@@ -18,9 +18,9 @@
 #define INCOMPLETE false 
 #define COMPLETE true
 
+
 #define DEFAULT_LINE_SLICE_LEN 10
 #define DEFAULT_FN_DEC_LEN 64
-
 #define DEFAULT_PARAMETER_DEFINITION_LEN 4
 
 #define XEB_TODO(name)\
@@ -33,8 +33,8 @@
   fprintf(stdout, "[XEB Internal Message]: "name" is still under development!\n");
 
 
-#define XEB_PUSH_ERROR(errno)\
-  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)));
+#define XEB_PUSH_ERROR(errno, flag)\
+  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag);
 
 // internal error messag, shared between the internal stdbuffer and the error handler
 
@@ -58,7 +58,8 @@
   X(XEB_WRONG_DEFINITION)\
   X(XEB_MISSING_DEFINITION)\
   X(XEB_NO_SUB_VARIABLE_OR_FUNCTION)\
-  X(XEB_WRONG_SYNTAX)
+  X(XEB_WRONG_SYNTAX)\
+  X(XEB_MISSING_PARAMETER_NAME)
 
 #define X(name) name,
 
@@ -91,11 +92,11 @@ typedef struct{
 typedef struct{
   char*name;
   LXR_TOKENS return_type;
-  variable_definition* function_parameter;
+  variable_definition** function_parameter;
   size_t parameter_len;
   size_t parameter_tracker;
   bool definition_status;
-}function_declaration;
+}function_definition;
 
 
 
@@ -126,18 +127,19 @@ static xebc compiler = {0};
 static Arena_header compiler_ah = {0};
 static bool hoterror_broadcaster_status = HEB_DISABLED;
 
-static function_declaration** fn_dec_table = {0};
-static size_t fn_dec_table_tracker = 0;
-static size_t fn_dec_table_len = 0;
+static function_definition** fn_def_table = {0};
+static size_t fn_def_table_tracker = 0;
+static size_t fn_def_table_len = 0;
 
 void xeb_helper();
 
 void xeb_error_init_handler(); 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line);
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line, bool*flag);
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
 void xeb_error_report();
 void xeb_error_send_error(XEB_COMPILER_ERRNO err);
 void xeb_error_open_public_hoterror_broadcaster();
+
 
 void xeb_error_calculate_total_lines();
 size_t xeb_error_get_line(char*ptr);
@@ -147,7 +149,8 @@ void xeb_load_output_filename(char*filename);
 
 void xeb_start_compiler(char*module_path);
 
-void xeb_function_declaration_push(function_declaration* fn_dec);
+void xeb_function_definition_push(function_definition* fn_def);
+bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd);
 
 void xeb_close_compiler();
 

@@ -29,16 +29,97 @@ void xeb_start_compiler(char*module_path){
   xeb_error_calculate_total_lines();
   //if(DEBUG) lxer_get_lxer_content(&compiler.lh);
 
-  function_declaration* fn_dec = NULL;
+  function_definition* fn_dec = NULL;
   variable_definition* vd = NULL;
+  bool function_scope_open = false;
 
   while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
-   
-    //XEB_PUSH_ERROR(XEB_NOT_A_FUNCTION);
+    LXR_TOKENS token = lxer_get_current_token(&compiler.lh);
+    if(token == LXR_FN){
+      if(xeb_compiler_function_definition(fn_dec, vd)){
+        function_scope_open = true;
+        xeb_function_definition_push(fn_dec);
+        if(DEBUG) DINFO("Function declaration pushed", NULL);
+      }
+    }
     lxer_next_token(&compiler.lh);
   }
 }
 
+
+bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd){
+  bool error_present = false;
+  char* fn_name = lxer_get_rh(&compiler.lh, false);
+  fn_def = (function_definition*)arena_alloc(&compiler_ah, sizeof(function_definition));
+  fn_def->name = fn_name;
+  if(!lxer_misc_expect_brk(&compiler.lh)){ XEB_PUSH_ERROR(XEB_WRONG_SYNTAX, error_present); }
+  lxer_next_token(&compiler.lh);
+  if(!lxer_brk_expect_brk(&compiler.lh) && lxer_brk_expect_type(&compiler.lh)){
+    // arguments present
+    if(DEBUG) DINFO("Processing function arguments: at least one argument found", NULL);
+    fn_def->function_parameter = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*DEFAULT_PARAMETER_DEFINITION_LEN);
+    fn_def->parameter_len = DEFAULT_PARAMETER_DEFINITION_LEN;
+    fn_def->parameter_tracker = 0;
+
+    while(lxer_get_current_token(&compiler.lh) != LXR_CLOSE_BRK){
+      if(lxer_get_current_token(&compiler.lh) == LXR_COMMA) lxer_next_token(&compiler.lh);
+      LXR_TOKENS parameter_type = lxer_get_current_token(&compiler.lh);
+      if(lxer_is_type(parameter_type) && lxer_type_expect_sep(&compiler.lh)){
+        lxer_next_token(&compiler.lh);
+        char* par_name = lxer_get_rh(&compiler.lh, false);
+        if(strlen(par_name) < 1) { XEB_PUSH_ERROR(XEB_MISSING_PARAMETER_NAME,error_present); }
+        vd = (variable_definition*)arena_alloc(&compiler_ah, sizeof(variable_definition));
+        vd->name = par_name;
+        vd->type = parameter_type;
+        lxer_next_token(&compiler.lh);
+        if(lxer_get_current_token(&compiler.lh) == LXR_COMMA && lxer_sep_expect_brk(&compiler.lh)) { XEB_PUSH_ERROR(XEB_WRONG_SYNTAX,error_present); }
+        fn_def->function_parameter[fn_def->parameter_tracker] = vd;
+        fn_def->parameter_tracker += 1;
+        if(fn_def->parameter_tracker == fn_def->parameter_len){
+          size_t new_size = fn_def->parameter_len*2;
+          variable_definition** new_function_parameter = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*new_size);
+          for(size_t i=0;i<fn_def->parameter_len;i++){
+            new_function_parameter[i] = fn_def->function_parameter[i];
+          }
+          fn_def->function_parameter = new_function_parameter;
+          fn_def->parameter_len = new_size;
+        }
+      }else{
+        XEB_PUSH_ERROR(XEB_WRONG_DEFINITION,error_present);
+        XEB_PUSH_ERROR(XEB_MISSING_TYPE, error_present);
+      }
+    }
+
+  }else if(lxer_brk_expect_brk(&compiler.lh)){
+    // no arguments
+    if(DEBUG) DINFO("Processing function arguments: no arguments found", NULL);
+
+    fn_def->parameter_len = 0;
+    fn_def->parameter_tracker = 0;
+    fn_def->function_parameter = NULL;
+    lxer_next_token(&compiler.lh);
+  }else{
+    XEB_PUSH_ERROR(XEB_WRONG_DEFINITION,error_present);
+    XEB_PUSH_ERROR(XEB_WRONG_SYNTAX,error_present);
+  }
+  lxer_next_token(&compiler.lh);
+  if(lxer_get_current_token(&compiler.lh) == LXR_SUB_SYMB) lxer_next_token(&compiler.lh);
+
+  if(!(lxer_get_current_token(&compiler.lh) == LXR_RETURN_ARROW)){ 
+    XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX,error_present);
+    XEB_PUSH_ERROR(XEB_NO_RETURN_ARROW_PROVIDED,error_present);
+    XEB_PUSH_ERROR(XEB_WRONG_DEFINITION, error_present);
+  }else{
+    if(lxer_misc_expect_type(&compiler.lh)){
+      lxer_next_token(&compiler.lh);
+      LXR_TOKENS return_type = lxer_get_current_token(&compiler.lh);
+      fn_def->return_type = return_type; 
+    }
+  }
+  // handle open and closed brackets
+  fn_def->definition_status = error_present;
+  return !error_present;
+}
 
 void xeb_error_calculate_total_lines(){
   NOTY("XEB Error Handler","Calculating total code line", NULL);
@@ -50,7 +131,7 @@ void xeb_error_calculate_total_lines(){
   size_t global_line_counter = 0;
   char* start_line = &compiler.source_code[0];
   char* cursor = NULL; 
-  
+
 
   while(start_line < &compiler.source_code[0] + compiler.source_len){
     cursor = strchr(start_line, '\n');
@@ -60,7 +141,7 @@ void xeb_error_calculate_total_lines(){
       global_line_counter+=1;
       start_line = cursor+1; 
       compiler.loaded_slice+=1;
-      
+
       if(compiler.loaded_slice == compiler.source_lines_len){
         line_slice* new_source_lines = (line_slice*)arena_alloc(&compiler_ah,sizeof(line_slice)*compiler.source_lines_len*2);
         size_t new_size = compiler.source_lines_len*2;
@@ -93,9 +174,10 @@ void xeb_error_init_handler(){
   compiler.error_tracker = 0;
 }
 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line){
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line, bool* status){
   xeb_error_box* error_box = NULL;
   if(err >= 0 && err < XEB_END_ERROR){
+    if(*status == false) *status = true;
     error_box = (xeb_error_box*)arena_alloc(&compiler_ah,sizeof(xeb_error_box));
     error_box->error = err;
     error_box->xeb_error_to_string = xeb_error_get_message(err);
@@ -123,15 +205,15 @@ char* xeb_error_get_message(XEB_COMPILER_ERRNO err){
   char* error_message = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);
   error_message[0] = '\0';
   #define X(name)\
-    case name:
-  
+    case name:\
+      strcpy(error_message,"\t"#name"\n");\
+      break;
+
+
   switch(err){
      XEB_ERRNO();
-        XEB_TODO("Complete error message generator");
-        strcpy(error_message, "generic error message");
-        break;
     default:
-      XEB_WARN_ERROR_MESSAGE()
+      XEB_WARN_ERROR_MESSAGE();
       break;
   }
 
@@ -141,9 +223,9 @@ char* xeb_error_get_message(XEB_COMPILER_ERRNO err){
 
 void xeb_error_report(){
   if(compiler.error_tracker > 0){
-    fprintf(stderr, "Error report: \n");
+    fprintf(stderr, "Error report before compilation: \n");
     for(size_t i=0;i<compiler.error_tracker; i++){
-      fprintf(stderr, "Error in line %zu: \n\t%s\n",compiler.final_error_report[i]->line_pointer, compiler.final_error_report[i]->xeb_error_to_string);
+      fprintf(stderr, "->  Error in line %zu: \n\t%s\n",compiler.final_error_report[i]->line_pointer, compiler.final_error_report[i]->xeb_error_to_string);
     }
   }
   return;
@@ -159,24 +241,24 @@ void xeb_error_open_public_hoterror_broadcaster(){
   hoterror_broadcaster_status = HEB_ENABLED;
 }
 
-void xeb_function_declaration_push(function_declaration* fn_dec){
-  if(fn_dec_table == NULL){
-    fn_dec_table = (function_declaration**)arena_alloc(&compiler_ah,sizeof(function_declaration*)*DEFAULT_FN_DEC_LEN);
-    fn_dec_table_tracker = 0;
-    fn_dec_table_len = DEFAULT_FN_DEC_LEN;
+void xeb_function_definition_push(function_definition* fn_def){
+  if(fn_def_table == NULL){
+    fn_def_table = (function_definition**)arena_alloc(&compiler_ah,sizeof(function_definition*)*DEFAULT_FN_DEC_LEN);
+    fn_def_table_tracker = 0;
+    fn_def_table_len = DEFAULT_FN_DEC_LEN;
   }
 
-  fn_dec_table[fn_dec_table_tracker] = fn_dec;
-  fn_dec_table_tracker += 1;
+  fn_def_table[fn_def_table_tracker] = fn_def;
+  fn_def_table_tracker += 1;
 
-  if(fn_dec_table_tracker == fn_dec_table_len){
-    size_t new_size = fn_dec_table_len *2;
-    function_declaration ** new_fn_table = (function_declaration**)arena_alloc(&compiler_ah,sizeof(function_declaration*)*new_size);
-    for(size_t i = 0;i<fn_dec_table_len;i++){
-      new_fn_table[i] = fn_dec_table[i]; 
+  if(fn_def_table_tracker == fn_def_table_len){
+    size_t new_size = fn_def_table_len *2;
+    function_definition ** new_fn_table = (function_definition**)arena_alloc(&compiler_ah,sizeof(function_definition*)*new_size);
+    for(size_t i = 0;i<fn_def_table_len;i++){
+      new_fn_table[i] = fn_def_table[i]; 
     }
-    fn_dec_table = new_fn_table;
-    fn_dec_table_len = new_size;
+    fn_def_table = new_fn_table;
+    fn_def_table_len = new_size;
   }
 
 }
