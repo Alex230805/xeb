@@ -17,7 +17,7 @@ void xeb_load_output_filename(char* filename){
 
   NOTY("XEB Compiler","Loading output filename inside the compiler memory", NULL);
   compiler.output_filename = filename;
-  return;
+return;
 }
 
 
@@ -29,11 +29,11 @@ void xeb_start_compiler(char*module_path){
   xeb_error_calculate_total_lines();
   //if(DEBUG) lxer_get_lxer_content(&compiler.lh);
 
-  function_definition* fn_dec = NULL;
+  function_definition* fn_def = NULL;
   variable_definition* vd = NULL;
-  bool function_scope_open = false;
   size_t brackets_tracker = 0;
 
+  XEB_FN_STATUS function_scope = NO_FN;
   XEB_SKIP comment_skip_status = NO_SKIP; 
 
   NOTY("XEB Compiler","Compilation process started\n", NULL);
@@ -59,18 +59,36 @@ void xeb_start_compiler(char*module_path){
     if(comment_skip_status == NO_SKIP){
       switch(token){
         case LXR_FN:
-          if(xeb_compiler_function_definition(fn_dec, vd)){
-            function_scope_open = true;
-            xeb_function_definition_push(fn_dec);
+          if(xeb_compiler_function_definition(fn_def, vd)){
+            function_scope= FN_OPEN;
+            xeb_function_definition_push(fn_def);
             if(DEBUG) DINFO("Function declaration pushed", NULL);
           }
           break;
-
-        case LXR_OPEN_CRL_BRK:
-          if(function_scope_open){
-            // do smth
-            (void)brackets_tracker;
+        case LXR_RET_STATEMENT:
+          /*
+          if(xeb_compiler_function_termination(fn_dec)){
+            function_scope = FN_CLOSED;
           }
+          */
+          break;
+        
+        case LXR_OPEN_CRL_BRK:
+          if(function_scope == FN_OPEN){
+            brackets_tracker += 1;
+          }
+
+        case LXR_CLOSE_CRL_BRK:
+          if(function_scope == FN_CLOSED){
+            brackets_tracker -= 1;
+            if(brackets_tracker != 0) {
+              XEB_PUSH_ERROR(XEB_WRONG_DEFINITION,fn_def->definition_status);
+              XEB_PUSH_ERROR(XEB_MISSING_BRACKETS,fn_def->definition_status);
+              fn_def->definition_status = INCOMPLETE;
+            }
+            function_scope = NO_FN;
+          }
+
         break;
         default: break;
       }
@@ -118,18 +136,68 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
   lxer_next_token(&compiler.lh);
   error_present = xeb_handle_parameter(fn_def, vd, error_present);
   lxer_next_token(&compiler.lh);
-  
+
   if(lxer_get_current_token(&compiler.lh) == LXR_SUB_SYMB) lxer_next_token(&compiler.lh);
 
-  if(!(lxer_get_current_token(&compiler.lh) == LXR_RETURN_ARROW)){ 
+  if(lxer_get_current_token(&compiler.lh) != LXR_RETURN_ARROW){ 
     XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX,error_present);
     XEB_PUSH_ERROR(XEB_NO_RETURN_ARROW_PROVIDED,error_present);
     XEB_PUSH_ERROR(XEB_WRONG_DEFINITION, error_present);
   }else{
-    if(lxer_misc_expect_type(&compiler.lh)){
+    lxer_next_token(&compiler.lh);
+    lxer_next_token(&compiler.lh);
+    LXR_TOKENS current_position = lxer_get_current_token(&compiler.lh);
+    fn_def->return_type = (LXR_TOKENS*)arena_alloc(&compiler_ah, sizeof(LXR_TOKENS)*DEFAULT_RETURN_LEN);
+    fn_def->return_type_len = DEFAULT_PARAMETER_DEFINITION_LEN;
+    fn_def->return_type_tracker = 0;
+
+    if(lxer_is_type(current_position)){
+      if(DEBUG) DINFO("Single return type found", NULL);
       lxer_next_token(&compiler.lh);
       LXR_TOKENS return_type = lxer_get_current_token(&compiler.lh);
-      fn_def->return_type = return_type; 
+      fn_def->return_type[0] = return_type;
+
+    }else if(lxer_is_brk(current_position)){
+      if(DEBUG) DINFO("At least two return types found", NULL);
+
+      /////////////////////////////////////////////////////////////
+
+      if(lxer_get_current_token(&compiler.lh) == LXR_OPEN_BRK){
+        lxer_next_token(&compiler.lh);
+        
+        //if(true){
+        while(lxer_get_current_token(&compiler.lh) != LXR_CLOSE_BRK){
+          //XEB_TODO("Handle multiple return definition, they're will be used in the return statement check for find if the type is indeed correct for all the envolved variable"); 
+          if(lxer_get_current_token(&compiler.lh) == LXR_COMMA) lxer_next_token(&compiler.lh);
+          LXR_TOKENS tok = lxer_get_current_token(&compiler.lh);
+          if(!lxer_type_expect_sep(&compiler.lh) && !lxer_type_expect_brk(&compiler.lh)) {
+            XEB_PUSH_ERROR(XEB_NO_RETURN_PROVIDED,error_present); 
+            XEB_PUSH_ERROR(XEB_WRONG_DEFINITION,error_present);
+            XEB_PUSH_ERROR(XEB_WRONG_SYNTAX, error_present);
+          }
+          fn_def->return_type[fn_def->return_type_tracker] = tok;
+          //printf(" token_table[%d] -> %s\n", fn_def->return_type[fn_def->return_type_tracker], token_table_lh[fn_def->return_type[fn_def->return_type_tracker]]);
+          fn_def->return_type_tracker += 1;
+          lxer_next_token(&compiler.lh);
+          if(lxer_get_current_token(&compiler.lh) != LXR_COMMA && lxer_get_current_token(&compiler.lh) != LXR_CLOSE_BRK) XEB_PUSH_ERROR(XEB_WRONG_SYNTAX, error_present);
+
+          if(fn_def->return_type_tracker == fn_def->return_type_len){
+            LXR_TOKENS* new_return_type = (LXR_TOKENS*)arena_alloc(&compiler_ah, sizeof(LXR_TOKENS)*fn_def->return_type_len*2);
+            size_t new_return_type_len = fn_def->return_type_len*2;
+            for(size_t i=0;i<0;i++){
+              new_return_type[i] = fn_def->return_type[i];
+            }
+            fn_def->return_type = new_return_type;
+            fn_def->return_type_len = new_return_type_len;
+          }
+
+        }
+        /////////////////////////////////////////////////////////////
+      }else{
+        XEB_PUSH_ERROR(XEB_WRONG_SYNTAX,error_present);
+        XEB_PUSH_ERROR(XEB_NO_RETURN_TYPE,error_present);
+        XEB_PUSH_ERROR(XEB_WRONG_DEFINITION, error_present);
+      }
     }
   }
   fn_def->definition_status = error_present;
@@ -141,7 +209,7 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
 bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present){
   if(!lxer_brk_expect_brk(&compiler.lh) && lxer_brk_expect_type(&compiler.lh)){
     // arguments present
-if(DEBUG) DINFO("Processing function arguments: at least one argument found", NULL);
+  if(DEBUG) DINFO("Processing function arguments: at least one argument found", NULL);
     fn_def->function_parameter = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*DEFAULT_PARAMETER_DEFINITION_LEN);
     fn_def->parameter_len = DEFAULT_PARAMETER_DEFINITION_LEN;
     fn_def->parameter_tracker = 0;
@@ -299,9 +367,9 @@ char* xeb_error_get_message(XEB_COMPILER_ERRNO err){
 
 void xeb_error_report(){
   if(compiler.error_tracker > 0){
-    fprintf(stderr, "Error report before compilation: \n");
+    fprintf(stderr, "\x1b[31mError report before compilation: \n\x1b[0m");
     for(size_t i=0;i<compiler.error_tracker; i++){
-      fprintf(stderr, "->  Error in line %zu: \n\t%s\n",compiler.final_error_report[i]->line_pointer, compiler.final_error_report[i]->xeb_error_to_string);
+      fprintf(stderr, "\x1b[31m->  Error in line %zu: \n\t%s\n\x1b[0m",compiler.final_error_report[i]->line_pointer, compiler.final_error_report[i]->xeb_error_to_string);
     }
   }
   return;

@@ -22,15 +22,16 @@
 #define DEFAULT_LINE_SLICE_LEN 10
 #define DEFAULT_FN_DEC_LEN 64
 #define DEFAULT_PARAMETER_DEFINITION_LEN 4
+#define DEFAULT_RETURN_LEN 1
 
 #define XEB_TODO(name)\
-  fprintf(stdout, "[XEB Internal TODO]: ");\
+  fprintf(stdout, "\x1b[33m[XEB Internal TODO]: "name"\x1b[0m\n");\
 
 #define XEB_WARN_ERROR_MESSAGE()\
   fprintf(stdout, "[XEB Error handler]: wrong error code encounter");
 
 #define XEB_NOT_IMPLEMENTED(name)\
-  fprintf(stdout, "[XEB Internal Message]: "name" is still under development!\n");
+  fprintf(stdout, "\x1b[33m[XEB Internal Message]: "name" is still under development!\n\x1b[0m");
 
 
 #define XEB_PUSH_ERROR(errno, flag)\
@@ -60,7 +61,8 @@
   X(XEB_MISSING_DEFINITION)\
   X(XEB_NO_SUB_VARIABLE_OR_FUNCTION)\
   X(XEB_WRONG_SYNTAX)\
-  X(XEB_MISSING_PARAMETER_NAME)
+  X(XEB_MISSING_PARAMETER_NAME)\
+  X(XEB_NO_RETURN_TYPE)
 
 #define X(name) name,
 
@@ -72,6 +74,7 @@ typedef enum{
 #undef X
 
 typedef enum {NO_SKIP, SINGLE_SKIP, START_LONG_SKIP, END_LONG_SKIP } XEB_SKIP;
+typedef enum {NO_FN, FN_OPEN, FN_CLOSED }XEB_FN_STATUS;
 
 typedef struct{
   XEB_COMPILER_ERRNO error;
@@ -93,10 +96,15 @@ typedef struct{
 
 typedef struct{
   char*name;
-  LXR_TOKENS return_type;
+  
+  LXR_TOKENS* return_type;
+  size_t return_type_len;
+  size_t return_type_tracker;
+
   variable_definition** function_parameter;
   size_t parameter_len;
   size_t parameter_tracker;
+
   bool definition_status;
 }function_definition;
 
@@ -132,6 +140,9 @@ static bool hoterror_broadcaster_status = HEB_DISABLED;
 static function_definition** fn_def_table = {0};
 static size_t fn_def_table_tracker = 0;
 static size_t fn_def_table_len = 0;
+
+
+////////////////////////////////////////////////////////////////////
 
 void xeb_helper();
 
