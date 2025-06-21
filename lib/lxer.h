@@ -163,7 +163,7 @@ static char* token_table_lh[] = {
   [LXR_OPEN_COMMENT] = "-/",
   [LXR_CLOSE_COMMENT] = "/-",
   
-  [LXR_STRING_TYPE] = "string",
+  [LXR_STRING_TYPE] = "str",
   [LXR_INT_TYPE] = "int",
   [LXR_DOUBLE_TYPE] = "double",
   [LXR_FLOAT_TYPE] = "float",
@@ -210,6 +210,7 @@ void lxer_get_lxer_content(lxer_head*lh);
 
 bool lxer_next_token(lxer_head*lh);
 LXR_TOKENS lxer_get_current_token(lxer_head*lh);
+void lxer_set_new_target(lxer_head* lh, char* new_line);
 char* lxer_get_current_pointer(lxer_head*lh);
 
 bool lxer_next_token(lxer_head*lh);

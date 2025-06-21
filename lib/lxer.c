@@ -87,6 +87,16 @@ LXR_TOKENS lxer_get_current_token(lxer_head*lh){
   return lh->stream_out[lh->lxer_tracker]->token;
 }
 
+void lxer_set_new_target(lxer_head* lh, char* new_line){
+  for(size_t i=lh->lxer_tracker;i<lh->stream_out_len; i++){
+    if(lh->stream_out[i]->byte_pointer > new_line){
+      lh->lxer_tracker = i;
+      break;
+    }
+  }
+}
+
+
 char* lxer_get_current_pointer(lxer_head*lh){
   return lh->stream_out[lh->lxer_tracker]->byte_pointer;
 }

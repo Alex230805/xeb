@@ -34,22 +34,79 @@ void xeb_start_compiler(char*module_path){
   bool function_scope_open = false;
   size_t brackets_tracker = 0;
 
+  XEB_SKIP comment_skip_status = NO_SKIP; 
+
+  NOTY("XEB Compiler","Compilation process started\n", NULL);
   while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
     LXR_TOKENS token = lxer_get_current_token(&compiler.lh);
-    if(token == LXR_FN){
-      if(xeb_compiler_function_definition(fn_dec, vd)){
-        function_scope_open = true;
-        xeb_function_definition_push(fn_dec);
-        if(DEBUG) DINFO("Function declaration pushed", NULL);
+
+    switch(token){
+      case LXR_LINE_COMMENT:
+        if(DEBUG) NOTY("XEB Comment LINE", "found single line comment, ignoring for now", NULL); 
+        comment_skip_status = SINGLE_SKIP; 
+        break;
+      case LXR_OPEN_COMMENT:
+        if(DEBUG) NOTY("XEB Comment SECTION", "comment section starter, a lot of lines are gonna be excluded this time", NULL); 
+        comment_skip_status = START_LONG_SKIP;
+        break;
+      case LXR_CLOSE_COMMENT:
+        if(DEBUG) NOTY("XEB Comment SECTION", "end comment section, this is the most reliable way to document you're code, well done", NULL); 
+        comment_skip_status = END_LONG_SKIP;
+      default: break;
+    }
+
+
+    if(comment_skip_status == NO_SKIP){
+      switch(token){
+        case LXR_FN:
+          if(xeb_compiler_function_definition(fn_dec, vd)){
+            function_scope_open = true;
+            xeb_function_definition_push(fn_dec);
+            if(DEBUG) DINFO("Function declaration pushed", NULL);
+          }
+          break;
+
+        case LXR_OPEN_CRL_BRK:
+          if(function_scope_open){
+            // do smth
+            (void)brackets_tracker;
+          }
+        break;
+        default: break;
       }
     }
-    if(token == LXR_OPEN_CRL_BRK){
-      brackets_tracker += 1;
+    
+    switch(comment_skip_status){
+      case NO_SKIP: 
+        lxer_next_token(&compiler.lh); 
+        break;
+      case SINGLE_SKIP: 
+        xeb_skip_line();
+        comment_skip_status = NO_SKIP;
+        break;
+      case START_LONG_SKIP: 
+        lxer_next_token(&compiler.lh); 
+        break;
+      case END_LONG_SKIP:
+        lxer_next_token(&compiler.lh); 
+        comment_skip_status = NO_SKIP; 
+        break;
+      default: break;
     }
-    lxer_next_token(&compiler.lh);
   }
 }
 
+void xeb_skip_line(){
+  char* tracker = lxer_get_current_pointer(&compiler.lh);
+  char* new_line = NULL;
+  for(size_t i=0;i<compiler.loaded_slice-1;i++){
+    if(compiler.source_lines[i].pointer >= tracker && tracker < compiler.source_lines[i+1].pointer){
+      new_line = compiler.source_lines[i+1].pointer;
+      break;
+    }
+  }
+  lxer_set_new_target(&compiler.lh, new_line);
+}
 
 bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd){
   bool error_present = false;
@@ -57,10 +114,34 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
   fn_def = (function_definition*)arena_alloc(&compiler_ah, sizeof(function_definition));
   fn_def->name = fn_name;
   if(!lxer_misc_expect_brk(&compiler.lh)){ XEB_PUSH_ERROR(XEB_WRONG_SYNTAX, error_present); }
+
   lxer_next_token(&compiler.lh);
+  error_present = xeb_handle_parameter(fn_def, vd, error_present);
+  lxer_next_token(&compiler.lh);
+  
+  if(lxer_get_current_token(&compiler.lh) == LXR_SUB_SYMB) lxer_next_token(&compiler.lh);
+
+  if(!(lxer_get_current_token(&compiler.lh) == LXR_RETURN_ARROW)){ 
+    XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX,error_present);
+    XEB_PUSH_ERROR(XEB_NO_RETURN_ARROW_PROVIDED,error_present);
+    XEB_PUSH_ERROR(XEB_WRONG_DEFINITION, error_present);
+  }else{
+    if(lxer_misc_expect_type(&compiler.lh)){
+      lxer_next_token(&compiler.lh);
+      LXR_TOKENS return_type = lxer_get_current_token(&compiler.lh);
+      fn_def->return_type = return_type; 
+    }
+  }
+  fn_def->definition_status = error_present;
+  return !error_present;
+}
+
+
+
+bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present){
   if(!lxer_brk_expect_brk(&compiler.lh) && lxer_brk_expect_type(&compiler.lh)){
     // arguments present
-    if(DEBUG) DINFO("Processing function arguments: at least one argument found", NULL);
+if(DEBUG) DINFO("Processing function arguments: at least one argument found", NULL);
     fn_def->function_parameter = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*DEFAULT_PARAMETER_DEFINITION_LEN);
     fn_def->parameter_len = DEFAULT_PARAMETER_DEFINITION_LEN;
     fn_def->parameter_tracker = 0;
@@ -113,23 +194,8 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
     XEB_PUSH_ERROR(XEB_WRONG_DEFINITION,error_present);
     XEB_PUSH_ERROR(XEB_WRONG_SYNTAX,error_present);
   }
-  lxer_next_token(&compiler.lh);
-  if(lxer_get_current_token(&compiler.lh) == LXR_SUB_SYMB) lxer_next_token(&compiler.lh);
 
-  if(!(lxer_get_current_token(&compiler.lh) == LXR_RETURN_ARROW)){ 
-    XEB_PUSH_ERROR(XEB_INCOMPLETE_SYNTAX,error_present);
-    XEB_PUSH_ERROR(XEB_NO_RETURN_ARROW_PROVIDED,error_present);
-    XEB_PUSH_ERROR(XEB_WRONG_DEFINITION, error_present);
-  }else{
-    if(lxer_misc_expect_type(&compiler.lh)){
-      lxer_next_token(&compiler.lh);
-      LXR_TOKENS return_type = lxer_get_current_token(&compiler.lh);
-      fn_def->return_type = return_type; 
-    }
-  }
-  // handle open and closed brackets
-  fn_def->definition_status = error_present;
-  return !error_present;
+  return error_present;
 }
 
 void xeb_error_calculate_total_lines(){
@@ -152,7 +218,6 @@ void xeb_error_calculate_total_lines(){
       global_line_counter+=1;
       start_line = cursor+1; 
       compiler.loaded_slice+=1;
-
       if(compiler.loaded_slice == compiler.source_lines_len){
         line_slice* new_source_lines = (line_slice*)arena_alloc(&compiler_ah,sizeof(line_slice)*compiler.source_lines_len*2);
         size_t new_size = compiler.source_lines_len*2;
@@ -243,6 +308,7 @@ void xeb_error_report(){
 }
 
 void xeb_error_send_error(XEB_COMPILER_ERRNO err){
+  (void)err;
   XEB_NOT_IMPLEMENTED("'xeb_error_send_error(XEB_COMPILER_ERRNO err)'"); 
   return;
 }

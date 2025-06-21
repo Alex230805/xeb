@@ -3,13 +3,13 @@ module test;
 -- defining the structure info
 
 def struct info{
-  name: string;
-  address: string;
+  str: name;
+  str: address;
 }
 
 -- creating a name function that return two string at the same time
 
-fn get_name(info: info) -> (string, string){
+fn get_name(info: main_info) -> (str, str){
   -- multiple return informations in a single line
-  ret(info.name as string, info.address as string);
+  ret(main_info.name as str, main_info.address as str);
 }

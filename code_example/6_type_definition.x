@@ -1,11 +1,11 @@
 import io::*;
 
 def struct TestStruct{
-  name: string;
-  surname: string;
+  str: name;
+  str: surname;
 
   fn get_info() -> string {
-    ret("We use to call you: {name} {surname}, welcome back");
+    ret("We use to call you: {this.name} {this.surname}, welcome back");
   }
 
   fn _init() -> void {

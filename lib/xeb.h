@@ -71,6 +71,7 @@ typedef enum{
 
 #undef X
 
+typedef enum {NO_SKIP, SINGLE_SKIP, START_LONG_SKIP, END_LONG_SKIP } XEB_SKIP;
 
 typedef struct{
   XEB_COMPILER_ERRNO error;
@@ -152,6 +153,8 @@ void xeb_start_compiler(char*module_path);
 
 void xeb_function_definition_push(function_definition* fn_def);
 bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd);
+bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present);
+void xeb_skip_line();
 
 void xeb_close_compiler();
 
