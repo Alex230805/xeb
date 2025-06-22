@@ -37,8 +37,7 @@
 #define XEB_PUSH_ERROR(errno, flag)\
   xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag);
 
-// internal error messag, shared between the internal stdbuffer and the error handler
-
+// internal error messag, used as error reporting tag to return errors before the compilation fully begins
 
 #define XEB_ERRNO()\
   X(XEB_ERROR_WRONG_SYNTAX)\

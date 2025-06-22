@@ -73,6 +73,7 @@
   X(LXR_FN)\
   X(LXR_AS_CAST)
 
+// Token organization table: this is used to generate the token enumerator and the token array. This architecture define the structure and the sepatration between tokens of different kinds
 
 #define TOKEN_DISPOSE()\
   TAG_MATH()\
