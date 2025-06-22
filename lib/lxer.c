@@ -106,26 +106,26 @@ bool lxer_is_math(LXR_TOKENS token){
   return false;
 }
 bool lxer_is_comment(LXR_TOKENS token){
-  if(token < TAG_COMMENT_END && token > TAG_SEP_END) return true;
+  if(token < TAG_COMMENT_END && token > TAG_MATH_END) return true;
   return false;
 }
 
 bool lxer_is_type(LXR_TOKENS token){
-  if(token > TAG_BRK_END && token < TAG_TYPE_END) return true;
+  if(token > TAG_COMMENT_END && token < TAG_TYPE_END) return true;
   return false;
 }
 
 bool lxer_is_sep(LXR_TOKENS token){
-  if(token > TAG_MATH_END && token < TAG_SEP_END) return true;
+  if(token > TAG_TYPE_END && token < TAG_SEP_END) return true;
   return false;
 }
 bool lxer_is_brk(LXR_TOKENS token){
-  if(token > TAG_COMMENT_END && token < TAG_BRK_END) return true;
+  if(token > TAG_SEP_END && token < TAG_BRK_END) return true;
   return false;
 }
 
 bool lxer_is_statement(LXR_TOKENS token){
-  if(token > TAG_TYPE_END && token < TAG_STATEMENT_END) return true;
+  if(token > TAG_BRK_END && token < TAG_STATEMENT_END) return true;
   return false;
 }
 

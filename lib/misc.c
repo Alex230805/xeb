@@ -29,7 +29,7 @@ void gc_push(tb_gc*gc, void* address){
 
 #endif
 
-StringBuilder* read_file(Arena_header* ah, const char*path){
+StringBuilder* read_file(Arena_header* ah, char*path){
   if(DEBUG) DINFO("Reading file", NULL); 
   StringBuilder *sb;
  
@@ -37,7 +37,7 @@ StringBuilder* read_file(Arena_header* ah, const char*path){
   FILE * fp;
   fp = fopen(path, "r");
   if(fp == NULL){
-    fprintf(stderr, "Unable to open '%s': %s\n", path,strerror(errno));
+    fprintf(stderr, "Unable to open instruction file: %s\n", strerror(errno));
     exit(errno);
   }
   fseek(fp, 0, SEEK_END);
@@ -55,8 +55,8 @@ void write_file(StringBuilder *sb, char *path){
   FILE * fp;
   fp = fopen(path, "w");
   if(fp == NULL){
-    fprintf(stderr, "Unable to open instruction file: %s : %d\n", strerror(errno), errno);
-    exit(1);
+    fprintf(stderr, "Unable to open instruction file: %s\n", strerror(errno));
+    exit(errno);
   }
   fwrite(sb->string, 1, sb->len, fp);
   fclose(fp);
@@ -117,7 +117,7 @@ void arena_create(Arena_header* arenah, int page_size, int page_count){
     arenah->swap = NULL;
     arenah->arena_count = 1;
     arenah->cursor = arena;
-  }  
+  }
 }
 
 void* arena_alloc(Arena_header* arenah, size_t size){
@@ -126,20 +126,22 @@ void* arena_alloc(Arena_header* arenah, size_t size){
   }
   Arena_alloc* arena = arenah->cursor;
   // number of required pages after normalization
-  int page_required = (int)size/arena->page_size;
-  int size_required = (int)size/arena->page_size*arena->pages;
-  
-  if(size/arena->free_pages*arena->pages >= 1){
+  int page_required = (int)size/ (1+(arena->page_size));
+  int size_required = (int)size/ (1+(arena->page_size*arena->pages));
+  if((int)size/ (1+(arena->free_pages*arena->pages)) >= 1){
     if(size_required >= 1){
       int new_size = arena->pages;
       int new_page_size = arena->page_size;
-      while((int)size/new_size*new_page_size > 1){new_size*=2;new_page_size*=2;}
+      while( (int)size/(1+(new_size*new_page_size)) >= 1){
+        new_size*=2;
+      }
       arena_create(arenah,new_page_size, new_size);
     }else{
-      arena_create(arenah,arena->page_size*2, arena->pages*2);
+      arena_create(arenah,arena->page_size, arena->pages);
     }
+    arena = arenah->cursor;
   }
-
+ 
   void* pointer = NULL;
   page_required+=1;
   int i = 0;
@@ -153,7 +155,6 @@ void* arena_alloc(Arena_header* arenah, size_t size){
 
   return pointer;
 }
-
 void arena_free_area(Arena_alloc* arena){
   free(arena->allocated_page);
   arena->allocated_page = NULL;

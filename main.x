@@ -24,6 +24,6 @@ module io;
 
 
 
-fn main(str: name, str: location) -> (void, float, str) {
+fn main(str: name, str:surname, int: born_date) -> str {  
   ret();
 }

@@ -45,7 +45,6 @@
   X(LXR_DOT)\
   X(LXR_QUOTE)\
   X(LXR_DOUBLE_QUOTE)\
-  X(LXR_TYPE_ASSIGN)
 
 
 #define TAG_BRK()\
@@ -63,7 +62,8 @@
   X(LXR_ASSIGNMENT)\
   X(LXT_EXPORT_STATEMENT)\
   X(LXR_MODULE_STATEMENT)\
-  X(LXR_IMPORT_STATEMENT)
+  X(LXR_IMPORT_STATEMENT)\
+  X(LXR_TYPE_ASSIGN)
 
 #define TAG_MISC()\
   X(LXR_RETURN_ARROW)\
@@ -74,30 +74,27 @@
   X(LXR_AS_CAST)
 
 
+#define TOKEN_DISPOSE()\
+  TAG_MATH()\
+  TAG_MATH_END,\
+  TAG_COMMENT()\
+  TAG_COMMENT_END,\
+  TAG_TYPE()\
+  TAG_TYPE_END,\
+  TAG_SEP()\
+  TAG_SEP_END,\
+  TAG_BRK()\
+  TAG_BRK_END,\
+  TAG_STATEMENT()\
+  TAG_STATEMENT_END,\
+  TAG_MISC()\
+  TOKEN_TABLE_END
+
 // lexer tokenizer
 #define X(name) name,
 
 typedef enum {
-  TAG_MATH()
-  TAG_MATH_END,
-  
-  TAG_SEP()
-  TAG_SEP_END,
-
-  TAG_COMMENT()
-  TAG_COMMENT_END,
-
-  TAG_BRK()
-  TAG_BRK_END,
-
-  TAG_TYPE()
-  TAG_TYPE_END,
-
-  TAG_STATEMENT()
-  TAG_STATEMENT_END,
-
-  TAG_MISC()
-  TOKEN_TABLE_END
+  TOKEN_DISPOSE()
 }LXR_TOKENS;
 
 #undef X
@@ -105,19 +102,7 @@ typedef enum {
 #define X(name) name,
 
 static const LXR_TOKENS token_array[] = {
-  TAG_MATH()
-  TAG_MATH_END,
-  TAG_COMMENT()
-  TAG_COMMENT_END, 
-  TAG_TYPE()
-  TAG_TYPE_END,
-  TAG_SEP()
-  TAG_SEP_END,
-  TAG_BRK()
-  TAG_BRK_END,
-  TAG_STATEMENT()
-  TAG_STATEMENT_END,
-  TAG_MISC()
+  TOKEN_DISPOSE()
 };
 
 #undef X
@@ -177,7 +162,6 @@ static char* token_table_lh[] = {
   [LXR_DOT] = ".",
   [LXR_QUOTE] = "'",
   [LXR_DOUBLE_QUOTE] = "\"",
-  [LXR_TYPE_ASSIGN] = ":",
 
   [LXR_OPEN_BRK] = "(",
   [LXR_CLOSE_BRK] = ")",
@@ -193,7 +177,8 @@ static char* token_table_lh[] = {
   [LXT_EXPORT_STATEMENT] = "export ",
   [LXR_MODULE_STATEMENT] = "module ",
   [LXR_IMPORT_STATEMENT] = "import ",
-
+  [LXR_TYPE_ASSIGN] = ":",
+  
   [LXR_RETURN_ARROW] = "->",
   [LXR_DEF_STATEMENT] = "def ",
   [LXR_STRUCT] = "struct ",
