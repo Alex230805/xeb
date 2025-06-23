@@ -94,20 +94,10 @@ void xeb_start_compiler(char*module_path){
     }
     
     switch(comment_skip_status){
-      case NO_SKIP: 
-        lxer_next_token(&compiler.lh); 
-        break;
-      case SINGLE_SKIP: 
-        xeb_skip_line();
-        comment_skip_status = NO_SKIP;
-        break;
-      case START_LONG_SKIP: 
-        lxer_next_token(&compiler.lh); 
-        break;
-      case END_LONG_SKIP:
-        lxer_next_token(&compiler.lh); 
-        comment_skip_status = NO_SKIP; 
-        break;
+      case NO_SKIP: lxer_next_token(&compiler.lh); break;
+      case SINGLE_SKIP: xeb_skip_line(); comment_skip_status = NO_SKIP;break;
+      case START_LONG_SKIP: lxer_next_token(&compiler.lh); break;
+      case END_LONG_SKIP: lxer_next_token(&compiler.lh); comment_skip_status = NO_SKIP; break;
       default: break;
     }
   }
