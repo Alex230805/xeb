@@ -174,6 +174,9 @@ bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd,
       // TODO: insert variable assignment
       XEB_NOT_IMPLEMENTED("xeb_compiler_variable_assignment()");
       if(lxer_get_current_token(&compiler.lh) == LXR_SEMICOLON){
+        
+        NOTY("TO ADD AS SOON AS POSSIBLE","Add local variable checking before pushing the definition", NULL);
+        
         dapush(&compiler_ah, cd->local_var, &cd->local_var_tracker, &cd->local_var_len, variable_definition*, vd);
         if(DEBUG) DINFO("Function definition pushed\n", NULL);  
       }else{
@@ -238,6 +241,10 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
           XEB_PUSH_ERROR(XEB_ERROR_MISSING_RETURN_OR_WRONG_SYNTAX,error_present); 
           return_token_counter = -1;
         }else{
+
+          NOTY("TO ADD AS SOON AS POSSIBLE","add function name check before the compilation", NULL);
+          NOTY("TO ADD AS SOON AS POSSIBLE","add 'main' function check and a flag to add error checking for the entry point", NULL);
+          
           dapush(&compiler_ah, fn_def->return_type, &fn_def->return_type_tracker, &fn_def->return_type_len, LXR_TOKENS, tok);
           lxer_next_token(&compiler.lh);
           return_token_counter += 1;
