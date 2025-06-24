@@ -644,7 +644,7 @@ char* lxer_get_rh(lxer_head* lh, bool reverse){
   
   memcpy(&buffer[0],pointer, word_len);
   buffer[word_len] = '\0';
-
+  
   return buffer;
 }
 

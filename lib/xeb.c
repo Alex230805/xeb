@@ -3,7 +3,7 @@
 
 
 bool xeb_load_file(char* path){
-  NOTY("XEB Compiler","loading source code", NULL);
+  XEB_NOTY("XEB Compiler","loading source code", NULL);
   if(path[strlen(path)-1] != 'x') return false;
   StringBuilder *sb = read_file(&compiler_ah,path);
   compiler.source_code = sb->string;
@@ -15,7 +15,7 @@ bool xeb_load_file(char* path){
 
 void xeb_load_output_filename(char* filename){
 
-  NOTY("XEB Compiler","Loading output filename inside the compiler memory", NULL);
+  XEB_NOTY("XEB Compiler","Loading output filename inside the compiler memory", NULL);
   compiler.output_filename = filename;
 return;
 }
@@ -23,34 +23,33 @@ return;
 
 
 void xeb_start_compiler(char*module_path){
-  NOTY("XEB Compiler","Starting compilation process", NULL);
+  XEB_NOTY("XEB Compiler","Starting compilation process", NULL);
   compiler.module_path = module_path;
   lxer_start_lexing(&compiler.lh, compiler.source_code);
   xeb_error_calculate_total_lines();
   //if(DEBUG) lxer_get_lxer_content(&compiler.lh);
 
-  function_definition* fn_def = NULL;
-  variable_definition* vd = NULL;
   size_t brackets_tracker = 0;
 
   XEB_FN_STATUS function_scope = NO_FN;
   XEB_SKIP comment_skip_status = NO_SKIP; 
+  code_section* cd = {0};
 
-  NOTY("XEB Compiler","Compilation process started\n", NULL);
+  XEB_NOTY("XEB Compiler","Compilation process started\n", NULL);
   while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
     LXR_TOKENS token = lxer_get_current_token(&compiler.lh);
 
     switch(token){
       case LXR_LINE_COMMENT:
-        if(DEBUG) NOTY("XEB Comment LINE", "found single line comment, ignoring for now", NULL); 
+        if(DEBUG) XEB_NOTY("XEB Comment LINE", "found single line comment, ignoring for now", NULL); 
         comment_skip_status = SINGLE_SKIP; 
         break;
       case LXR_OPEN_COMMENT:
-        if(DEBUG) NOTY("XEB Comment SECTION", "comment section starter, a lot of lines are gonna be excluded this time", NULL); 
+        if(DEBUG) XEB_NOTY("XEB Comment SECTION", "comment section starter, a lot of lines are gonna be excluded this time", NULL); 
         comment_skip_status = START_LONG_SKIP;
         break;
       case LXR_CLOSE_COMMENT:
-        if(DEBUG) NOTY("XEB Comment SECTION", "end comment section, this is the most reliable way to document you're code, well done", NULL); 
+        if(DEBUG) XEB_NOTY("XEB Comment SECTION", "end comment section, this is the most reliable way to document you're code, well done", NULL); 
         comment_skip_status = END_LONG_SKIP;
       default: break;
     }
@@ -59,10 +58,29 @@ void xeb_start_compiler(char*module_path){
     if(comment_skip_status == NO_SKIP){
       switch(token){
         case LXR_FN:
-          if(xeb_compiler_function_definition(fn_def, vd)){
+          if(function_scope == NO_FN){
+            function_definition* fn_def = NULL;
+            variable_definition* vd = NULL;           
+            if(!xeb_compiler_function_definition(fn_def, vd)){
+              XEB_PUSH_ONLY_ERROR(XEB_ERROR_WRONG_SYNTAX);
+            }else{
             function_scope= FN_OPEN;
             xeb_function_definition_push(fn_def);
             if(DEBUG) DINFO("Function declaration pushed", NULL);
+            cd = (code_section*)arena_alloc(&compiler_ah, sizeof(code_section));
+            cd->fn = fn_def;
+            cd->local_var = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*5);
+            cd->local_var_tracker = 0;
+            cd->local_var_len = 5;
+            cd->il = (instruction_list**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*5);
+            cd->instruction_list_tracker = 0;
+            cd->instruction_list_len = 5;
+            cd->code_section_completed = INCOMPLETE; 
+            if(DEBUG) DINFO("Code section initialized", NULL);
+            }
+          }else{
+            XEB_PUSH_ONLY_ERROR(XEB_INVALID_FUNCTION_SCOPE);
+            XEB_PUSH_ONLY_ERROR(XEB_FUNCTION_INITIALIZATION_NOT_POSSIBLE);
           }
           break;
         case LXR_RET_STATEMENT:
@@ -82,13 +100,31 @@ void xeb_start_compiler(char*module_path){
           if(function_scope == FN_CLOSED){
             brackets_tracker -= 1;
             if(brackets_tracker != 0) {
+              function_definition* fn_def = xeb_function_definition_get();
               XEB_PUSH_ERROR(XEB_ERROR_MISSING_BRACKETS,fn_def->definition_status);
               fn_def->definition_status = INCOMPLETE;
             }
             function_scope = NO_FN;
           }
-
         break;
+
+        case LXR_STRING_TYPE:
+        case LXR_INT_TYPE: 
+        case LXR_DOUBLE_TYPE:
+        case LXR_FLOAT_TYPE:
+        case LXR_CHAR_TYPE:
+        case LXR_POINTER_TYPE:
+        case LXR_VOID_TYPE:         
+          if(function_scope == FN_OPEN){
+            variable_definition* vd = NULL;
+            if(!xeb_compiler_variable_definition(vd, cd, token)){
+              XEB_PUSH_ONLY_ERROR(XEB_ERROR_WRONG_SYNTAX);
+            }
+          }else{
+            XEB_NOT_IMPLEMENTED("global_variable_compilation()");
+          }
+        break;
+
         default: break;
       }
     }
@@ -114,6 +150,44 @@ void xeb_skip_line(){
   }
   lxer_set_new_target(&compiler.lh, new_line);
 }
+
+
+bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd, LXR_TOKENS token){
+  bool error_present = false;
+  bool not_a_valid_assignment = false;
+  vd = (variable_definition*)arena_alloc(&compiler_ah, sizeof(variable_definition));
+  vd->type = token;
+  if(!lxer_type_expect_statement(&compiler.lh)){ error_present = true;}
+  lxer_next_token(&compiler.lh);
+  if(lxer_get_current_token(&compiler.lh) == LXR_TYPE_ASSIGN){
+    char * buffer = lxer_get_rh(&compiler.lh, false);
+    if(strlen(buffer) < 1) { error_present = true; }
+    vd->name = buffer;
+    if(DEBUG) DINFO("Function definition process of name '%s' initialized with type '%s'", vd->name, token_table_lh[vd->type]); 
+    lxer_next_token(&compiler.lh);
+    if(lxer_get_current_token(&compiler.lh) == LXR_SEMICOLON){
+      if(DEBUG) DINFO("Function definition pushed\n", NULL);  
+      dapush(&compiler_ah, cd->local_var, &cd->local_var_tracker, &cd->local_var_len, variable_definition*, vd);
+    }else if(lxer_get_current_token(&compiler.lh) == LXR_ASSIGNMENT && lxer_statement_expect_sep(&compiler.lh)){
+      if(DEBUG) DINFO("Variable assignment required after initialization\n", NULL);
+
+      // TODO: insert variable assignment
+      XEB_NOT_IMPLEMENTED("xeb_compiler_variable_assignment()");
+      if(lxer_get_current_token(&compiler.lh) == LXR_SEMICOLON){
+        dapush(&compiler_ah, cd->local_var, &cd->local_var_tracker, &cd->local_var_len, variable_definition*, vd);
+        if(DEBUG) DINFO("Function definition pushed\n", NULL);  
+      }else{
+        not_a_valid_assignment = true;
+        error_present = true;
+      }
+    }else{ error_present = true; not_a_valid_assignment = true; }
+    if(error_present) XEB_PUSH_ONLY_ERROR(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION);
+    if(not_a_valid_assignment) XEB_PUSH_ONLY_ERROR(XEB_ERROR_NOT_A_VALID_ASSIGNMENT); 
+  }
+
+  return !(error_present | not_a_valid_assignment);
+}
+
 
 bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd){
   bool error_present = false;
@@ -176,11 +250,46 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
       XEB_PUSH_ERROR(XEB_ERROR_NO_RETURN_PROVIDED, error_present);
     }
   }
+  compiler.lh.lxer_tracker--;
   fn_def->definition_status = error_present;
   return !error_present;
 }
 
+void xeb_code_section_push(code_section* cd){
+  if(code_section_list == NULL) {
+    code_section_list = (code_section**)arena_alloc(&compiler_ah, sizeof(code_section*)*DEFAULT_CODE_SECTION_LENGTH);
+    code_section_list_tracker = 0;
+    code_section_list_len = 0;
+  }
+  dapush(&compiler_ah, code_section_list, &code_section_list_tracker, &code_section_list_len, code_section*, cd);
+}
 
+code_section* xeb_code_section_get(){
+  return code_section_list[code_section_list_tracker-1];
+}
+
+
+size_t xeb_data_section_push(char* stream){
+  if(data_section == NULL){
+    data_section = (u8*)arena_alloc(&compiler_ah, sizeof(u8)*DEFAULT_DATA_SECTION_LEN);
+    data_section_len = 0;
+    data_section_tracker = 0;
+  }
+  if(data_section_tracker+strlen(stream) >= data_section_len){
+    u8* new_data_section = (u8*)arena_alloc(&compiler_ah, sizeof(u8)*data_section_len*2);
+    size_t new_len = data_section_len*2;
+    memcpy(new_data_section, data_section, data_section_len);
+    data_section = new_data_section;
+    data_section_len = new_len; 
+  }
+  size_t return_index = data_section_tracker;
+  memcpy(&data_section[data_section_tracker], stream, strlen(stream));
+  data_section_tracker += strlen(stream);
+  data_section[data_section_tracker] = '\0';
+  data_section++;
+
+  return return_index;
+}
 
 bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present){
   if(!lxer_brk_expect_brk(&compiler.lh) && lxer_brk_expect_type(&compiler.lh)){
@@ -290,19 +399,22 @@ void xeb_error_init_handler(){
 bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line, bool* status){
   xeb_error_box* error_box = NULL;
   if(err >= 0 && err < XEB_END_ERROR){
-    if(*status == false) *status = true;
-    error_box = (xeb_error_box*)arena_alloc(&compiler_ah,sizeof(xeb_error_box));
-    error_box->error = err;
-    error_box->xeb_error_to_string = xeb_error_get_message(err);
-    error_box->code_pointer = pointer;
-    error_box->line_pointer = line;
-    
-    dapush(&compiler_ah, compiler.final_error_report, &compiler.error_tracker, &compiler.error_report_len, xeb_error_box*, error_box);
-    return true;
+    if(!*status) *status = true;
+    return xeb_error_push_only_error(err, pointer, line);
   }
   return false;
 }
 
+bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line){
+  xeb_error_box* error_box = NULL;
+  error_box = (xeb_error_box*)arena_alloc(&compiler_ah,sizeof(xeb_error_box));
+  error_box->error = err;
+  error_box->xeb_error_to_string = xeb_error_get_message(err);
+  error_box->code_pointer = pointer;
+  error_box->line_pointer = line;
+  dapush(&compiler_ah, compiler.final_error_report, &compiler.error_tracker, &compiler.error_report_len, xeb_error_box*, error_box);
+  return true;
+}
 
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err){
   char* error_message = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);
@@ -312,11 +424,9 @@ char* xeb_error_get_message(XEB_COMPILER_ERRNO err){
       strcpy(error_message,"\t"#name"\n");\
       break;
 
-
   switch(err){
      XEB_ERRNO();
     default:
-      XEB_WARN_ERROR_MESSAGE();
       break;
   }
 
@@ -355,9 +465,12 @@ void xeb_function_definition_push(function_definition* fn_def){
   dapush(&compiler_ah, fn_def_table, &fn_def_table_tracker, &fn_def_table_len, function_definition*, fn_def);
 }
 
+function_definition* xeb_function_definition_get(){
+  return fn_def_table[fn_def_table_tracker-1];
+}
 
 void xeb_close_compiler(){
-  NOTY("XEB Compiler", "Compilation completed, exiting..", NULL);
+  XEB_NOTY("XEB Compiler", "Compilation completed, exiting..", NULL);
   if(compiler_ah.arena_count >= 1) arena_free(&compiler_ah);
   if(compiler.lh.lxer_ah.arena_count >= 1) arena_free(&compiler.lh.lxer_ah);
 }

@@ -9,6 +9,8 @@
 #include <misc.h>
 
 
+#define u8 uint8_t 
+
 #define ERROR_REPORT_BUFFER_DEFAULT_LEN 256
 #define ERROR_BUFFER_DEFAULT_LEN 256
 
@@ -22,19 +24,25 @@
 #define DEFAULT_FN_DEC_LEN 64
 #define DEFAULT_PARAMETER_DEFINITION_LEN 16
 #define DEFAULT_RETURN_LEN 8
+#define DEFAULT_CODE_SECTION_LENGTH 16
+#define DEFAULT_DATA_SECTION_LEN 256
 
 #define XEB_TODO(name)\
-  fprintf(stdout, "\x1b[33m[XEB Internal TODO]: "name"\x1b[0m\n");\
-
-#define XEB_WARN_ERROR_MESSAGE()\
-  fprintf(stdout, "[XEB Error handler]: wrong error code encounter");
+  TODO(name, NULL);
 
 #define XEB_NOT_IMPLEMENTED(name)\
-  fprintf(stdout, "\x1b[33m[XEB Internal Message]: "name" is still under development!\n\x1b[0m");
+  NOTY("XEB Internal Message", name" is not implemented yet", NULL);
 
+
+#define XEB_NOTY(tag,name, ...)\
+  fprintf(stdout,"\e[1;32m["tag"]: "name"\e[0m\n",__VA_ARGS__);
 
 #define XEB_PUSH_ERROR(errno, flag)\
   xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag);
+
+#define XEB_PUSH_ONLY_ERROR(errno)\
+  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)));
+
 
 // internal error messag, used as error reporting tag to return errors before the compilation fully begins
 
@@ -54,7 +62,12 @@
   X(XEB_ERROR_EXPECTING_MULTIPLE_RETURN_TYPE)\
   X(XEB_ERROR_RETURN_SCOPE_NOT_CLOSED_CORRECTLY)\
   X(XEB_ERROR_WRONG_RETURN_TYPE_DEFINITION)\
-  X(XEB_ERROR_MISSING_RETURN_OR_WRONG_SYNTAX)
+  X(XEB_ERROR_MISSING_RETURN_OR_WRONG_SYNTAX)\
+  X(XEB_INVALID_FUNCTION_SCOPE)\
+  X(XEB_FUNCTION_INITIALIZATION_NOT_POSSIBLE)\
+  X(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION)\
+  X(XEB_ERROR_NOT_A_VALID_ASSIGNMENT)\
+  X(XEB_ERROR_NOT_A_VALID_INSTRUCTION_FOR_XEB_LANGUAGE) 
 
 #define X(name) name,
 
@@ -67,6 +80,8 @@ typedef enum{
 
 typedef enum {NO_SKIP, SINGLE_SKIP, START_LONG_SKIP, END_LONG_SKIP } XEB_SKIP;
 typedef enum {NO_FN, FN_OPEN, FN_CLOSED }XEB_FN_STATUS;
+typedef enum {IF, SWITCH, ASSIGN}XEB_INST_TYPE;
+
 
 typedef struct{
   XEB_COMPILER_ERRNO error;
@@ -110,9 +125,21 @@ typedef struct{
 
 
 typedef struct{
-  void* inst;
   XEB_INST_TYPE type;
+  void* inst;
 }instruction_list;
+
+
+typedef struct{
+  char* va_name;
+  char* va_index;
+  
+  u8* va_implicit_ass;
+  size_t relative_ass;
+  
+  bool implicit;
+  bool relative;
+}variable_assignment;
 
 typedef struct{
   function_definition* fn;
@@ -121,9 +148,10 @@ typedef struct{
   size_t local_var_tracker;
   size_t local_var_len;
 
-  instruction_list* il;
+  instruction_list** il;
   size_t instruction_list_tracker;
   size_t instruction_list_len;
+  bool code_section_completed;
 }code_section;
 
 
@@ -158,6 +186,13 @@ static function_definition** fn_def_table = {0};
 static size_t fn_def_table_tracker = 0;
 static size_t fn_def_table_len = 0;
 
+static code_section** code_section_list = {0};
+static size_t code_section_list_tracker = 0;
+static size_t code_section_list_len = 0;
+
+static u8* data_section = {0};
+static size_t data_section_len = 0;
+static size_t data_section_tracker = 0; 
 
 /* Current compilation structure
 *
@@ -211,6 +246,7 @@ void xeb_helper();
 
 void xeb_error_init_handler(); 
 bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line, bool*flag);
+bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line);
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
 void xeb_error_report();
 void xeb_error_send_error(XEB_COMPILER_ERRNO err);
@@ -226,7 +262,13 @@ void xeb_load_output_filename(char*filename);
 void xeb_start_compiler(char*module_path);
 
 void xeb_function_definition_push(function_definition* fn_def);
+function_definition* xeb_function_definition_get();
+
+void xeb_code_section_push(code_section* cd);
+code_section* xeb_code_section_get();
+
 bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd);
+bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd, LXR_TOKENS token);
 bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present);
 void xeb_skip_line();
 

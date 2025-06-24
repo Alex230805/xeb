@@ -65,13 +65,13 @@ typedef struct{
   fprintf(stdout,"\e[1;32m[TODO]: "string"\e[0m\n",__VA_ARGS__);    // bold green
 
 #define ERROR(string,...) \
-  fprintf(stderr,"\e[41;37m[ERROR]: "string"\e[0m\n",__VA_ARGS__); exit(1); // underline white, background red
+  fprintf(stderr,"\e[41;37m[ERROR]: "string"\e[0m\n",__VA_ARGS__); //exit(1); // underline white, background red
 
 #define DINFO(string, ...) \
   fprintf(stdout, "\e[4;33m[DEBUG]: "string"\e[0m\n", __VA_ARGS__);  // underline yellow
 
 #define NOTY(noty,string, ...) \
-  printf("\e[1;32m["noty"]: "string"\e[0m\n", __VA_ARGS__);          // regular purple
+  printf("\e[1;35m["noty"]: "string"\e[0m\n", __VA_ARGS__);          // regular purple
 
 #define WARNING(string,...) \
   printf("\e[43;1;91m[WARNING]: "string"\e[0m\n", __VA_ARGS__);
@@ -92,7 +92,6 @@ typedef struct{
     arr = new_arr;\
     *size = new_size;\
   }
-
 
 
 
