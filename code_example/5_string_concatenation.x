@@ -5,10 +5,10 @@ import io;
 fn main() -> void {
   
   -- simple interpolation
-  string name = "Alex";
-  print("Hello {name}, how can I help you?");
+  string: name = "Alex";
+  print("Hello \{name}, how can I help you?");
   string scan_res = scan();
-  print("Wow, this is strange I cannot serve you for {scan_res} or whatever");
+  print("Wow, this is strange I cannot serve you for \{scan_res} or whatever");
   
   string ability[] = {
     "Nothing",
@@ -29,7 +29,7 @@ fn main() -> void {
     print(ability[index]);
   }
 
-  string name;
+  string: name;
   print("If You don't mind what about my name? you still didn't give me a name, chose one: ");
   name = scan();
   print("I still can't do shit, but now my name is", name); -- this is a string concatenation

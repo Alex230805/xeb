@@ -15,7 +15,7 @@ fn do_smth(int: a, str: b) -> void {
     "c"
   }
 
-  int len = str.len;
+  int: len = str.len;
 
   if(len != a){
     ret();                    -- return symbol 

@@ -1,4 +1,4 @@
-import io;
+import io.*;
 
 
 
@@ -23,11 +23,11 @@ fn main() -> void{
   }
 
   for(list as elem){          -- foreach type of loops
-    print("We have {elem} available, come here");
+    print("We have \{elem} available, come here");
   }
 
   for(index, list as elem){             -- foreach type of loop with index
-    print("Try also {elem} with index {index}");
+    print("Try also \{elem} with index \{index}");
   }
 
   int counter = 0;
