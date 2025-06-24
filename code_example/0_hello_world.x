@@ -1,7 +1,7 @@
 
 
 -- import io module
-import io.*
+include io.*
 
 
 -- main function

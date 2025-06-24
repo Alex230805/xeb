@@ -1,4 +1,4 @@
-import io.*;
+include io.*;
 
 def struct TestStruct{
   str: name;

@@ -4,8 +4,8 @@
 
 fn main() -> void {
 
-  int test = 0;
-  string name = "Ezio";
+  int: test = 0;
+  string: name = "Ezio Auditore";
 
 -/
 
@@ -15,6 +15,7 @@ fn main() -> void {
 
 /-
 
+  bool: go_on = true;
   switch(test){
     (0) -> {
       -- do smth
@@ -24,6 +25,9 @@ fn main() -> void {
     }
 
     (2) -> {
+      -- do smth
+    }
+    (3),(_ > 10 || go_on) ->{
       -- do smth
     }
   }else{

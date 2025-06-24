@@ -1,4 +1,4 @@
-module test;
+include test;
 
 -- defining the structure info
 

@@ -1,5 +1,5 @@
 
-import io;    -- where the main io method are located
+include io;    -- where the main io method are located
 
 -- this is an example of what xeb may look like
 

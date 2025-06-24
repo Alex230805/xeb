@@ -1,6 +1,6 @@
 -- main.x test file 
 
-module io;
+include io;
 
 
 -/
