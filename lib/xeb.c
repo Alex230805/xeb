@@ -33,8 +33,10 @@ void xeb_start_compiler(char*module_path){
 
   XEB_FN_STATUS function_scope = NO_FN;
   XEB_SKIP comment_skip_status = NO_SKIP; 
-  code_section* cd = {0};
-
+  code_section* cd = NULL;
+  function_definition* fn_def = NULL;
+  variable_definition* vd = NULL;
+  
   XEB_NOTY("XEB Compiler","Compilation process started\n", NULL);
   while(compiler.lh.lxer_tracker < compiler.lh.stream_out_len){
     LXR_TOKENS token = lxer_get_current_token(&compiler.lh);
@@ -59,25 +61,21 @@ void xeb_start_compiler(char*module_path){
       switch(token){
         case LXR_FN:
           if(function_scope == NO_FN){
-            function_definition* fn_def = NULL;
-            variable_definition* vd = NULL;           
-            if(!xeb_compiler_function_definition(fn_def, vd)){
-              XEB_PUSH_ONLY_ERROR(XEB_ERROR_WRONG_SYNTAX);
-            }else{
-            function_scope= FN_OPEN;
-            xeb_function_definition_push(fn_def);
+            bool fn_status = xeb_compiler_function_definition(fn_def, vd);
+            if(!fn_status) XEB_PUSH_ONLY_ERROR(XEB_ERROR_WRONG_SYNTAX);
+            function_scope = FN_OPEN;
             if(DEBUG) DINFO("Function declaration pushed", NULL);
             cd = (code_section*)arena_alloc(&compiler_ah, sizeof(code_section));
-            cd->fn = fn_def;
+            cd->fn = xeb_function_definition_get();
             cd->local_var = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*5);
             cd->local_var_tracker = 0;
             cd->local_var_len = 5;
             cd->il = (instruction_list**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*5);
             cd->instruction_list_tracker = 0;
             cd->instruction_list_len = 5;
-            cd->code_section_completed = INCOMPLETE; 
+            cd->code_section_completed = INCOMPLETE;
+            xeb_code_section_push(cd);
             if(DEBUG) DINFO("Code section initialized", NULL);
-            }
           }else{
             XEB_PUSH_ONLY_ERROR(XEB_INVALID_FUNCTION_SCOPE);
             XEB_PUSH_ONLY_ERROR(XEB_FUNCTION_INITIALIZATION_NOT_POSSIBLE);
@@ -100,9 +98,11 @@ void xeb_start_compiler(char*module_path){
           if(function_scope == FN_CLOSED){
             brackets_tracker -= 1;
             if(brackets_tracker != 0) {
-              function_definition* fn_def = xeb_function_definition_get();
+              fn_def = xeb_function_definition_get();
               XEB_PUSH_ERROR(XEB_ERROR_MISSING_BRACKETS,fn_def->definition_status);
               fn_def->definition_status = INCOMPLETE;
+              cd = xeb_code_section_get();
+              cd->code_section_completed = INCOMPLETE;
             }
             function_scope = NO_FN;
           }
@@ -116,8 +116,10 @@ void xeb_start_compiler(char*module_path){
         case LXR_POINTER_TYPE:
         case LXR_VOID_TYPE:         
           if(function_scope == FN_OPEN){
-            variable_definition* vd = NULL;
+            vd = NULL;
+            cd = xeb_code_section_get();
             if(!xeb_compiler_variable_definition(vd, cd, token)){
+              XEB_PUSH_ONLY_ERROR(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION);
               XEB_PUSH_ONLY_ERROR(XEB_ERROR_WRONG_SYNTAX);
             }
           }else{
@@ -163,39 +165,38 @@ bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd,
     char * buffer = lxer_get_rh(&compiler.lh, false);
     if(strlen(buffer) < 1) { error_present = true; }
     vd->name = buffer;
-    if(DEBUG) DINFO("Function definition process of name '%s' initialized with type '%s'", vd->name, token_table_lh[vd->type]); 
+    if(DEBUG) DINFO("Variable deifnition with name '%s' initialized with type '%s'", vd->name, token_table_lh[vd->type]); 
     lxer_next_token(&compiler.lh);
+    
     if(lxer_get_current_token(&compiler.lh) == LXR_SEMICOLON){
-      if(DEBUG) DINFO("Function definition pushed\n", NULL);  
-      dapush(&compiler_ah, cd->local_var, &cd->local_var_tracker, &cd->local_var_len, variable_definition*, vd);
-    }else if(lxer_get_current_token(&compiler.lh) == LXR_ASSIGNMENT && lxer_statement_expect_sep(&compiler.lh)){
+      if(!(error_present | not_a_valid_assignment)){
+        xeb_variable_definition_push(vd, cd); 
+      }
+    }else if(lxer_get_current_token(&compiler.lh) == LXR_ASSIGNMENT){
       if(DEBUG) DINFO("Variable assignment required after initialization\n", NULL);
-
       // TODO: insert variable assignment
       XEB_NOT_IMPLEMENTED("xeb_compiler_variable_assignment()");
-      if(lxer_get_current_token(&compiler.lh) == LXR_SEMICOLON){
-        
-        NOTY("TO ADD AS SOON AS POSSIBLE","Add local variable checking before pushing the definition", NULL);
-        
-        dapush(&compiler_ah, cd->local_var, &cd->local_var_tracker, &cd->local_var_len, variable_definition*, vd);
-        if(DEBUG) DINFO("Function definition pushed\n", NULL);  
-      }else{
-        not_a_valid_assignment = true;
-        error_present = true;
-      }
-    }else{ error_present = true; not_a_valid_assignment = true; }
-    if(error_present) XEB_PUSH_ONLY_ERROR(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION);
-    if(not_a_valid_assignment) XEB_PUSH_ONLY_ERROR(XEB_ERROR_NOT_A_VALID_ASSIGNMENT); 
+    }else { error_present = true; not_a_valid_assignment = true; }
   }
-
   return !(error_present | not_a_valid_assignment);
 }
 
+variable_definition* xeb_variable_definition_get(char*name, code_section* cd){
+  variable_definition* vd = NULL;
+  for(size_t i=0;i<cd->local_var_tracker && cd->local_var_tracker > 0; i++){
+    if(strcmp(cd->local_var[i]->name, name) == 0){
+      vd = cd->local_var[i];
+      break;
+    }
+  }
+  return vd;
+}
 
 bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd){
   bool error_present = false;
   char* fn_name = lxer_get_rh(&compiler.lh, false);
   fn_def = (function_definition*)arena_alloc(&compiler_ah, sizeof(function_definition));
+  if(strlen(fn_name) < 2) { XEB_PUSH_ERROR(XEB_ERROR_NO_VALID_FUNCTION_NAME,error_present); }
   fn_def->name = fn_name;
   if(!lxer_misc_expect_brk(&compiler.lh)){ XEB_PUSH_ERROR(XEB_ERROR_WRONG_FUNCTION_DEFINITION, error_present); }
 
@@ -241,10 +242,6 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
           XEB_PUSH_ERROR(XEB_ERROR_MISSING_RETURN_OR_WRONG_SYNTAX,error_present); 
           return_token_counter = -1;
         }else{
-
-         NOTY("TO ADD AS SOON AS POSSIBLE","add function name check before the compilation", NULL);
-          NOTY("TO ADD AS SOON AS POSSIBLE","add 'main' function check and a flag to add error checking for the entry point", NULL);
-          
           dapush(&compiler_ah, fn_def->return_type, &fn_def->return_type_tracker, &fn_def->return_type_len, LXR_TOKENS, tok);
           lxer_next_token(&compiler.lh);
           return_token_counter += 1;
@@ -259,6 +256,7 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
   }
   compiler.lh.lxer_tracker--;
   fn_def->definition_status = error_present;
+  if(!error_present) xeb_function_definition_push(fn_def);
   return !error_present;
 }
 
@@ -296,6 +294,24 @@ size_t xeb_data_section_push(char* stream){
   data_section++;
 
   return return_index;
+}
+
+void xeb_variable_definition_push(variable_definition* vd, code_section* cd){
+  bool not_found = true;
+  
+  for(size_t i = 0; i<cd->local_var_tracker &&  cd->local_var_tracker> 0;i++){
+    if(strcmp(vd->name, cd->local_var[i]->name) == 0){
+      not_found = false;
+      break;
+    }
+  }
+
+  if(not_found){
+    if(DEBUG) DINFO("Pushing variable definition inside '%s' code section", cd->fn->name);
+    dapush(&compiler_ah, cd->local_var, &cd->local_var_tracker, &cd->local_var_len, variable_definition*, vd);
+  }else{
+    XEB_PUSH_ONLY_ERROR(XEB_ERROR_VARIABLE_ALREADY_DEFINED);
+  }
 }
 
 bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present){
@@ -412,16 +428,16 @@ void xeb_error_init_handler(){
   compiler.error_tracker = 0;
 }
 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer ,size_t line, bool* status){
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer ,size_t line, bool* status, bool report){
   xeb_error_box* error_box = NULL;
   if(err >= 0 && err < XEB_END_ERROR){
     if(!*status) *status = true;
-    return xeb_error_push_only_error(err, pointer,line_pointer, line);
+    return xeb_error_push_only_error(err, pointer,line_pointer, line, report);
   }
   return false;
 }
 
-bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer ,size_t line){
+bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer ,size_t line, bool report){
   xeb_error_box* error_box = NULL;
   error_box = (xeb_error_box*)arena_alloc(&compiler_ah,sizeof(xeb_error_box));
   error_box->error = err;
@@ -429,6 +445,7 @@ bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_p
   error_box->code_pointer = pointer;
   error_box->line = line;
   error_box->line_pointer = line_pointer;
+  error_box->complete_report = report;
   dapush(&compiler_ah, compiler.final_error_report, &compiler.error_tracker, &compiler.error_report_len, xeb_error_box*, error_box);
   return true;
 }
@@ -457,16 +474,19 @@ void xeb_error_report(){
     for(size_t i=0;i<compiler.error_tracker; i++){
       fprintf(stderr, "\x1b[31m->  Error in line %zu: \n\t%s\n",compiler.final_error_report[i]->line, compiler.final_error_report[i]->xeb_error_to_string);
       
-      size_t fail_point = (int)(compiler.final_error_report[i]->code_pointer - compiler.final_error_report[i]->line_pointer) + 1;
-      char* buffer = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);
-      strcpy(buffer, compiler.final_error_report[i]->line_pointer);
-      char* tracker = strchr(buffer,'\n');
-      if( tracker != NULL) buffer[(int)(tracker-buffer)] = '\0';
-      fprintf(stderr, "\x1b[31m%s\n", buffer);
-      for(size_t i=0;i<fail_point;i++){
-        fprintf(stderr,"^");
+      if(compiler.final_error_report[i]->complete_report){
+        size_t fail_point = (int)(compiler.final_error_report[i]->code_pointer - compiler.final_error_report[i]->line_pointer);
+        char* buffer = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);
+        // TODO: handle no token immediatly before the new line, this require a function to detect if the current token pointer is inside the line scope, if this is the case then is possible to offset the error report by n character, but if there is no valid token then the whole line should be displayer from the beginning to the first new line character
+        strcpy(buffer, compiler.final_error_report[i]->line_pointer);
+        char* tracker = strchr(buffer,'\n');
+        if( tracker != NULL) buffer[(int)(tracker-buffer)] = '\0';
+        fprintf(stderr, "\x1b[31m%s\n", buffer);
+        for(size_t i=0;i<fail_point;i++){
+          fprintf(stderr,"^");
+        }
+        fprintf(stderr, "\n\x1b[0m");
       }
-      fprintf(stderr, "\n\x1b[0m");
       fprintf(stderr, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
     }
   }
@@ -491,7 +511,27 @@ void xeb_function_definition_push(function_definition* fn_def){
     fn_def_table_len = DEFAULT_FN_DEC_LEN;
   }
   
-  dapush(&compiler_ah, fn_def_table, &fn_def_table_tracker, &fn_def_table_len, function_definition*, fn_def);
+  bool not_found = true;
+
+  if(!entry_point_present){
+    if(strcmp(fn_def->name, "main") == 0){
+      if(DEBUG) DINFO("Entry point found with name '%s'", fn_def->name);
+      entry_point_present = true;
+    }
+  }
+
+  for(size_t i = 0; i<fn_def_table_tracker && fn_def_table_tracker > 0;i++){
+    if(strcmp(fn_def_table[i]->name, fn_def->name) == 0){
+      not_found = false;
+      break;
+    }
+  }
+  if(not_found){
+    if(DEBUG) DINFO("Pushing function definition", NULL);
+    dapush(&compiler_ah, fn_def_table, &fn_def_table_tracker, &fn_def_table_len, function_definition*, fn_def);
+  }else{
+    XEB_PUSH_ONLY_ERROR(XEB_ERROR_FUNCTION_ALREADY_DEFINED);
+  }
 }
 
 function_definition* xeb_function_definition_get(){

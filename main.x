@@ -25,5 +25,10 @@ include io;
 
 
 fn main(str: name, str:surname, int: born_date) -> str {  
+  str: local_name;
+  str: local_surname;
+
+  -/ comment inside function /-
+
   ret();
 }

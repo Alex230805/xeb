@@ -38,11 +38,14 @@
   fprintf(stdout,"\e[1;32m["tag"]: "name"\e[0m\n",__VA_ARGS__);
 
 #define XEB_PUSH_ERROR(errno, flag)\
-  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)),xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag);
+  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)),xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag, true);
 
 #define XEB_PUSH_ONLY_ERROR(errno)\
-  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)));
+  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), true);
 
+
+#define XEB_PUSH_ONY_ERROR_NO_COMPLETE_REPORT(errno)\
+  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), false);
 
 // internal error messag, used as error reporting tag to return errors before the compilation fully begins
 
@@ -67,7 +70,10 @@
   X(XEB_FUNCTION_INITIALIZATION_NOT_POSSIBLE)\
   X(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION)\
   X(XEB_ERROR_NOT_A_VALID_ASSIGNMENT)\
-  X(XEB_ERROR_NOT_A_VALID_INSTRUCTION_FOR_XEB_LANGUAGE) 
+  X(XEB_ERROR_NOT_A_VALID_INSTRUCTION_FOR_XEB_LANGUAGE)\
+  X(XEB_ERROR_FUNCTION_ALREADY_DEFINED)\
+  X(XEB_ERROR_NO_VALID_FUNCTION_NAME)\
+  X(XEB_ERROR_VARIABLE_ALREADY_DEFINED)
 
 #define X(name) name,
 
@@ -89,6 +95,7 @@ typedef struct{
   char* code_pointer;
   char* line_pointer;
   size_t line;
+  bool complete_report;
 }xeb_error_box;
 
 typedef struct{
@@ -194,6 +201,8 @@ static size_t code_section_list_len = 0;
 static u8* data_section = {0};
 static size_t data_section_len = 0;
 static size_t data_section_tracker = 0; 
+static bool entry_point_present = false;
+
 
 /* Current compilation structure
 *
@@ -243,37 +252,49 @@ static size_t data_section_tracker = 0;
 
 ////////////////////////////////////////////////////////////////////
 
-void xeb_helper();
+
+// error related functions
 
 void xeb_error_init_handler(); 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, char* line_pointer, size_t line, bool*flag);
-bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer, size_t line);
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, char* line_pointer, size_t line, bool*flag, bool report);
+bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer, size_t line, bool report);
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
 void xeb_error_report();
 void xeb_error_send_error(XEB_COMPILER_ERRNO err);
 void xeb_error_open_public_hoterror_broadcaster();
 char* xeb_error_get_line_pointer(char* ptr);
-
 void xeb_error_calculate_total_lines();
 size_t xeb_error_get_line(char*ptr);
+
+// file related function
 
 bool xeb_load_file(char* source_file);
 void xeb_load_output_filename(char*filename);
 
-void xeb_start_compiler(char*module_path);
+// function related to pushing or getting something
 
 void xeb_function_definition_push(function_definition* fn_def);
-function_definition* xeb_function_definition_get();
-
+void xeb_variable_definition_push(variable_definition* vd, code_section* cd);
 void xeb_code_section_push(code_section* cd);
+
+function_definition* xeb_function_definition_get();
 code_section* xeb_code_section_get();
+variable_definition* xeb_variable_definition_get(char*name, code_section* cd);
+
+// compiler functions related to parsing and creating the intermediate memory-like reperesentation
 
 bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd);
 bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd, LXR_TOKENS token);
 bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present);
 void xeb_skip_line();
 
+// compiler usage functions 
+
+void xeb_start_compiler(char*module_path);
 void xeb_close_compiler();
+void xeb_helper();
+
+
 
 #ifndef XEB_C
 #define XEB_C
