@@ -38,10 +38,10 @@
   fprintf(stdout,"\e[1;32m["tag"]: "name"\e[0m\n",__VA_ARGS__);
 
 #define XEB_PUSH_ERROR(errno, flag)\
-  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag);
+  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)),xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag);
 
 #define XEB_PUSH_ONLY_ERROR(errno)\
-  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)));
+  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)));
 
 
 // internal error messag, used as error reporting tag to return errors before the compilation fully begins
@@ -87,7 +87,8 @@ typedef struct{
   XEB_COMPILER_ERRNO error;
   char* xeb_error_to_string;
   char* code_pointer;
-  size_t line_pointer;
+  char* line_pointer;
+  size_t line;
 }xeb_error_box;
 
 typedef struct{
@@ -245,13 +246,13 @@ static size_t data_section_tracker = 0;
 void xeb_helper();
 
 void xeb_error_init_handler(); 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line, bool*flag);
-bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line);
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, char* line_pointer, size_t line, bool*flag);
+bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer, size_t line);
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
 void xeb_error_report();
 void xeb_error_send_error(XEB_COMPILER_ERRNO err);
 void xeb_error_open_public_hoterror_broadcaster();
-
+char* xeb_error_get_line_pointer(char* ptr);
 
 void xeb_error_calculate_total_lines();
 size_t xeb_error_get_line(char*ptr);

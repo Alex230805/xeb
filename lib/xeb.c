@@ -242,7 +242,7 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
           return_token_counter = -1;
         }else{
 
-          NOTY("TO ADD AS SOON AS POSSIBLE","add function name check before the compilation", NULL);
+         NOTY("TO ADD AS SOON AS POSSIBLE","add function name check before the compilation", NULL);
           NOTY("TO ADD AS SOON AS POSSIBLE","add 'main' function check and a flag to add error checking for the entry point", NULL);
           
           dapush(&compiler_ah, fn_def->return_type, &fn_def->return_type_tracker, &fn_def->return_type_len, LXR_TOKENS, tok);
@@ -385,8 +385,17 @@ void xeb_error_calculate_total_lines(){
 }
 
 
+char* xeb_error_get_line_pointer(char* ptr){
+  for(size_t i=1;i<compiler.loaded_slice-1;i++){
+    if(compiler.source_lines[i].pointer > ptr){
+      return compiler.source_lines[i-1].pointer;
+    }
+  }
+  return NULL;
+}
+
 size_t xeb_error_get_line(char*ptr){
-  for(size_t i=1;i<compiler.loaded_slice;i++){
+  for(size_t i=0;i<compiler.loaded_slice;i++){
     if(compiler.source_lines[i].pointer > ptr){
       return compiler.source_lines[i].line;
     }
@@ -403,22 +412,23 @@ void xeb_error_init_handler(){
   compiler.error_tracker = 0;
 }
 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line, bool* status){
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer ,size_t line, bool* status){
   xeb_error_box* error_box = NULL;
   if(err >= 0 && err < XEB_END_ERROR){
     if(!*status) *status = true;
-    return xeb_error_push_only_error(err, pointer, line);
+    return xeb_error_push_only_error(err, pointer,line_pointer, line);
   }
   return false;
 }
 
-bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer, size_t line){
+bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer ,size_t line){
   xeb_error_box* error_box = NULL;
   error_box = (xeb_error_box*)arena_alloc(&compiler_ah,sizeof(xeb_error_box));
   error_box->error = err;
   error_box->xeb_error_to_string = xeb_error_get_message(err);
   error_box->code_pointer = pointer;
-  error_box->line_pointer = line;
+  error_box->line = line;
+  error_box->line_pointer = line_pointer;
   dapush(&compiler_ah, compiler.final_error_report, &compiler.error_tracker, &compiler.error_report_len, xeb_error_box*, error_box);
   return true;
 }
@@ -445,7 +455,19 @@ void xeb_error_report(){
   if(compiler.error_tracker > 0){
     fprintf(stderr, "\x1b[31mError report before compilation: \n\x1b[0m");
     for(size_t i=0;i<compiler.error_tracker; i++){
-      fprintf(stderr, "\x1b[31m->  Error in line %zu: \n\t%s\n\x1b[0m",compiler.final_error_report[i]->line_pointer, compiler.final_error_report[i]->xeb_error_to_string);
+      fprintf(stderr, "\x1b[31m->  Error in line %zu: \n\t%s\n",compiler.final_error_report[i]->line, compiler.final_error_report[i]->xeb_error_to_string);
+      
+      size_t fail_point = (int)(compiler.final_error_report[i]->code_pointer - compiler.final_error_report[i]->line_pointer) + 1;
+      char* buffer = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);
+      strcpy(buffer, compiler.final_error_report[i]->line_pointer);
+      char* tracker = strchr(buffer,'\n');
+      if( tracker != NULL) buffer[(int)(tracker-buffer)] = '\0';
+      fprintf(stderr, "\x1b[31m%s\n", buffer);
+      for(size_t i=0;i<fail_point;i++){
+        fprintf(stderr,"^");
+      }
+      fprintf(stderr, "\n\x1b[0m");
+      fprintf(stderr, "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n");
     }
   }
   return;
