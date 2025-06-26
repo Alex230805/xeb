@@ -41,10 +41,11 @@ StringBuilder* read_file(Arena_header* ah, char*path){
     exit(errno);
   }
   fseek(fp, 0, SEEK_END);
-  sb->len = ftell(fp);
+  sb->len = ftell(fp)+1;
   rewind(fp);
   sb->string = (char*)arena_alloc(ah,sizeof(char)*sb->len);
   fread(sb->string, sizeof(char), sb->len,fp);
+  sb->string[sb->len-1] = '\n';
   sb->string[sb->len] = '\0';
   fclose(fp);
   return sb;

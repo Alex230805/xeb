@@ -43,9 +43,11 @@
 #define XEB_PUSH_ONLY_ERROR(errno)\
   xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), true);
 
+#define XEB_PUSH_ONLY_ERROR_CUSTOM_LINE(errno, local_source_tracker)\
+  xeb_error_push_only_error(errno, compiler.source_lines[local_source_tracker].pointer,compiler.source_lines[local_source_tracker].pointer, local_source_tracker, true);
 
-#define XEB_PUSH_ONY_ERROR_NO_COMPLETE_REPORT(errno)\
-  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), false);
+
+
 
 // internal error messag, used as error reporting tag to return errors before the compilation fully begins
 
@@ -101,8 +103,12 @@ typedef struct{
 typedef struct{
   char* pointer;
   size_t line;
+  bool has_tokens;
 }line_slice;
 
+
+
+////////////////////////////////////////////////////////
 
 typedef struct{
   char* name;
@@ -163,6 +169,7 @@ typedef struct{
 }code_section;
 
 
+////////////////////////////////////////////////////////
 
 typedef struct{
   // compiler lexer and source code
@@ -175,7 +182,6 @@ typedef struct{
   line_slice* source_lines;
   size_t source_lines_len;
   size_t loaded_slice;
-
 
   // compiler error array, return error after the compilation
   xeb_error_box** final_error_report;
@@ -287,6 +293,8 @@ bool xeb_compiler_function_definition(function_definition* fn_def, variable_defi
 bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd, LXR_TOKENS token);
 bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present);
 void xeb_skip_line();
+bool xeb_line_is_empty(size_t line_number);
+void xeb_validate_line_status();
 
 // compiler usage functions 
 

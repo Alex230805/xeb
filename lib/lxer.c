@@ -13,6 +13,7 @@ void lxer_start_lexing(lxer_head* lh, char * source){
   size_t array_qt = 0;
   char * buffer = (char*)arena_alloc(&lh->lxer_ah,sizeof(char)*32);
   bool ignore_lex;
+  
 
   for(size_t i=0;i<lh->source_len;i++){
     char* tracker = &lh->source[i];
@@ -99,6 +100,7 @@ void lxer_set_new_target(lxer_head* lh, char* new_line){
 
 char* lxer_get_current_pointer(lxer_head*lh){
   return lh->stream_out[lh->lxer_tracker]->byte_pointer;
+  
 }
 
 bool lxer_is_math(LXR_TOKENS token){

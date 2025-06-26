@@ -195,9 +195,11 @@ void lxer_start_lexing(lxer_head* lh, char* source_file);
 void lxer_get_lxer_content(lxer_head*lh);
 
 bool lxer_next_token(lxer_head*lh);
-LXR_TOKENS lxer_get_current_token(lxer_head*lh);
 void lxer_set_new_target(lxer_head* lh, char* new_line);
+
+LXR_TOKENS lxer_get_current_token(lxer_head*lh);
 char* lxer_get_current_pointer(lxer_head*lh);
+
 
 bool lxer_next_token(lxer_head*lh);
 bool lxer_is_math(LXR_TOKENS token);
