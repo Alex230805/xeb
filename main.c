@@ -100,7 +100,7 @@ int main(int argc, char** argv){
       xeb_load_output_filename(output_file_name);
       xeb_start_compiler(module_path);
       xeb_error_report();
-      xeb_close_compiler();       
+      xeb_close_compiler(false);       
     }
   }
   return 0;

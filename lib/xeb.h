@@ -26,6 +26,7 @@
 #define DEFAULT_RETURN_LEN 8
 #define DEFAULT_CODE_SECTION_LENGTH 16
 #define DEFAULT_DATA_SECTION_LEN 256
+#define DEFAULT_ERROR_LIMIT 20
 
 #define XEB_TODO(name)\
   TODO(name, NULL);
@@ -37,16 +38,23 @@
 #define XEB_NOTY(tag,name, ...)\
   fprintf(stdout,"\e[1;32m["tag"]: "name"\e[0m\n",__VA_ARGS__);
 
-#define XEB_PUSH_ERROR(errno, flag)\
-  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)),xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), &flag, true);
+#define XEB_PUSH_ERROR(errno, expect, but_got)\
+  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), true, expect, but_got, NULL);
 
-#define XEB_PUSH_ONLY_ERROR(errno)\
-  xeb_error_push_only_error(errno, lxer_get_current_pointer(&compiler.lh),xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), true);
+#define XEB_PUSH_ERROR_CUSTOM_LINE(errno, local_source_tracker)\
+  xeb_error_push_error(errno, compiler.source_lines[local_source_tracker].pointer,compiler.source_lines[local_source_tracker].pointer, local_source_tracker, false, TOKEN_TABLE_END, TOKEN_TABLE_END, NULL);
 
-#define XEB_PUSH_ONLY_ERROR_CUSTOM_LINE(errno, local_source_tracker)\
-  xeb_error_push_only_error(errno, compiler.source_lines[local_source_tracker].pointer,compiler.source_lines[local_source_tracker].pointer, local_source_tracker, true);
+#define XEB_PUSH_ERROR_CUSTOM_MESSAGE(errno,string)\
+  xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), false, TOKEN_TABLE_END, TOKEN_TABLE_END, string);
 
+#define XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(errno, string)\
+  xeb_error_push_error(errno, ctx->pointer, ctx->pointer, ctx->line,false, TOKEN_TABLE_END, TOKEN_TABLE_END,string);
 
+#define XEB_NEXT_TOKEN()\
+  xeb_next_token(ctx)
+
+#define XEB_GET_CURRENT_TOKEN()\
+  xeb_get_current_token(ctx)
 
 
 // internal error messag, used as error reporting tag to return errors before the compilation fully begins
@@ -75,7 +83,12 @@
   X(XEB_ERROR_NOT_A_VALID_INSTRUCTION_FOR_XEB_LANGUAGE)\
   X(XEB_ERROR_FUNCTION_ALREADY_DEFINED)\
   X(XEB_ERROR_NO_VALID_FUNCTION_NAME)\
-  X(XEB_ERROR_VARIABLE_ALREADY_DEFINED)
+  X(XEB_ERROR_NO_VALID_VARIABLE_NAME)\
+  X(XEB_ERROR_VARIABLE_ALREADY_DEFINED)\
+  X(XEB_ERROR_MISSING_COMMA_SEPARATOR)\
+  X(XEB_ERROR_MISSING_RETURN_TYPE)\
+  X(XEB_ERROR_MISSING_TYPE)\
+  X(XEB_ERROR_FUNCTION_SCOPE_NOT_CLOSED_CORRECTLY)
 
 #define X(name) name,
 
@@ -87,7 +100,7 @@ typedef enum{
 #undef X
 
 typedef enum {NO_SKIP, SINGLE_SKIP, START_LONG_SKIP, END_LONG_SKIP } XEB_SKIP;
-typedef enum {NO_FN, FN_OPEN, FN_CLOSED }XEB_FN_STATUS;
+typedef enum {NO_FN, FN_OPEN}XEB_FN_STATUS;
 typedef enum {IF, SWITCH, ASSIGN}XEB_INST_TYPE;
 
 
@@ -98,12 +111,19 @@ typedef struct{
   char* line_pointer;
   size_t line;
   bool complete_report;
+  LXR_TOKENS lh;
+  LXR_TOKENS rh;
+  char* string;
 }xeb_error_box;
 
 typedef struct{
   char* pointer;
   size_t line;
   bool has_tokens;
+  LXR_TOKENS* local_tokens;
+  size_t local_tokens_len;
+  size_t local_tokens_tracker;
+  size_t local_tokens_rp;
 }line_slice;
 
 
@@ -144,16 +164,6 @@ typedef struct{
 }instruction_list;
 
 
-typedef struct{
-  char* va_name;
-  char* va_index;
-  
-  u8* va_implicit_ass;
-  size_t relative_ass;
-  
-  bool implicit;
-  bool relative;
-}variable_assignment;
 
 typedef struct{
   function_definition* fn;
@@ -262,8 +272,8 @@ static bool entry_point_present = false;
 // error related functions
 
 void xeb_error_init_handler(); 
-bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer, char* line_pointer, size_t line, bool*flag, bool report);
-bool xeb_error_push_only_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer, size_t line, bool report);
+bool xeb_error_push_error(XEB_COMPILER_ERRNO err, char*pointer,char* line_pointer, size_t line, bool report, LXR_TOKENS lh, LXR_TOKENS rh, char* string);
+
 char* xeb_error_get_message(XEB_COMPILER_ERRNO err);
 void xeb_error_report();
 void xeb_error_send_error(XEB_COMPILER_ERRNO err);
@@ -289,17 +299,22 @@ variable_definition* xeb_variable_definition_get(char*name, code_section* cd);
 
 // compiler functions related to parsing and creating the intermediate memory-like reperesentation
 
-bool xeb_compiler_function_definition(function_definition* fn_def, variable_definition* vd);
-bool xeb_compiler_variable_definition(variable_definition* vd, code_section* cd, LXR_TOKENS token);
-bool xeb_handle_parameter(function_definition* fn_def, variable_definition* vd, bool error_present);
-void xeb_skip_line();
+bool xeb_compiler_function_definition(line_slice *ctx,function_definition* fn_def, variable_definition* vd);
+bool xeb_handle_parameter(line_slice* ctx, function_definition* fn_def, variable_definition* vd);
+bool xeb_handle_return_type(line_slice*ctx, function_definition* fn_def);
+bool xeb_compiler_variable_definition(line_slice *ctx, variable_definition* vd, code_section* cd);
+
 bool xeb_line_is_empty(size_t line_number);
 void xeb_validate_line_status();
+
+LXR_TOKENS xeb_get_current_token(line_slice* ctx);
+bool xeb_next_token(line_slice* ctx);
+void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* function_scope);
 
 // compiler usage functions 
 
 void xeb_start_compiler(char*module_path);
-void xeb_close_compiler();
+void xeb_close_compiler(bool fatal);
 void xeb_helper();
 
 

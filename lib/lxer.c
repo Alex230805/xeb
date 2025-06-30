@@ -85,6 +85,9 @@ bool lxer_next_token(lxer_head*lh){
 
 
 LXR_TOKENS lxer_get_current_token(lxer_head*lh){
+  if(lh->lxer_tracker == lh->stream_out_len) {
+    return TOKEN_TABLE_END;
+  }
   return lh->stream_out[lh->lxer_tracker]->token;
 }
 

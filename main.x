@@ -1,9 +1,3 @@
--- main.x test file 
-
-
-
--- include io;
-
 
 -/
 
@@ -20,17 +14,18 @@
     ret(weight as float);
   }
 
-
-
 /-
 
 
+fn main(str: name, str: surname, int: date) -> (str,str,int,double) {
 
-fn main(str: name, str:surname, int: born_date) -> str {  
-  str: local_name;
-  str: local_surname;
-
-  -/ comment inside function /-
-
-  ret();
 }
+
+fn yo_mom(str: name, double: weight) -> str {
+  int: number;
+
+  -- str:res = "obese indeed";
+  -- ret(res);
+
+}
+

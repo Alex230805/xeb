@@ -1,4 +1,4 @@
-FLAG=-Wall -Wextra
+FLAG=-Wall -Wextra 
 INCLUDE_DIR=-I./lib/
 LIB_DIR=-L./bin/
 COMP=clang

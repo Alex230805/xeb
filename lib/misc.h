@@ -65,7 +65,7 @@ typedef struct{
   fprintf(stdout,"\e[1;32m[TODO]: "string"\e[0m\n",__VA_ARGS__);    // bold green
 
 #define ERROR(string,...) \
-  fprintf(stderr,"\e[41;37m[ERROR]: "string"\e[0m\n",__VA_ARGS__); //exit(1); // underline white, background red
+  fprintf(stderr,"\e[41;37m[ERROR]: "string"\x1b[0m\n",__VA_ARGS__); //exit(1); // underline white, background red
 
 #define DINFO(string, ...) \
   fprintf(stdout, "\e[4;33m[DEBUG]: "string"\e[0m\n", __VA_ARGS__);  // underline yellow
