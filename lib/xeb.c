@@ -80,17 +80,15 @@ void xeb_start_compiler(char*module_path){
 
 void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* function_scope){
   code_section* cd = NULL;
-  function_definition* fn_def = NULL;
-  variable_definition* vd = NULL;
   switch(token){
     case LXR_FN:
       if(*function_scope == NO_FN){
-        *function_scope = FN_OPEN;
-        bool definition_status = xeb_compiler_function_definition(ctx,fn_def, vd);
+        bool definition_status = xeb_compiler_function_definition(ctx);
         XEB_NEXT_TOKEN();
         if(XEB_GET_CURRENT_TOKEN() == LXR_OPEN_CRL_BRK && definition_status){
+          *function_scope = FN_OPEN;
           cd = (code_section*)arena_alloc(&compiler_ah, sizeof(code_section));
-          cd->fn = xeb_function_definition_get();
+          cd->fn = xeb_function_definition_get(); 
           cd->local_var = (variable_definition**)arena_alloc(&compiler_ah, sizeof(variable_definition*)*5);
           cd->local_var_tracker = 0;
           cd->local_var_len = 5;
@@ -110,9 +108,18 @@ void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* fu
       }
       break;
     case LXR_RET_STATEMENT:
-          /*
-            TODO: complete function definition with the return statement
-          */
+          if(*function_scope == FN_OPEN){
+            cd = xeb_code_section_get();
+            bool return_status = xeb_compiler_return_inst(ctx);
+            if(return_status){
+              // TODO: code here to complete the return instruction 
+            }else{
+              XEB_PUSH_ERROR_CUSTOM_MESSAGE(XEB_ERROR_WRONG_SYNTAX, "Not a valid return");
+              
+            }
+          }else{
+            XEB_PUSH_ERROR_CUSTOM_MESSAGE(XEB_ERROR_WRONG_RETURN_DEFINITION, "Unable to find a valid scope for the return statement");
+          }
       break;
 
     case LXR_OPEN_CRL_BRK:
@@ -137,9 +144,7 @@ void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* fu
     case LXR_POINTER_TYPE:
     case LXR_VOID_TYPE:         
       if(*function_scope == FN_OPEN){
-        vd = NULL;
-        cd = xeb_code_section_get();
-        bool variable_definition_status = xeb_compiler_variable_definition(ctx,vd, cd);
+        bool variable_definition_status = xeb_compiler_variable_definition(ctx);
         if(!variable_definition_status){
           XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION, "This is not a valid variable definition, try to follow the documentation");
         }
@@ -160,11 +165,25 @@ void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* fu
 }
 
 
-// TODO: recreate variable defintion with the new error reporting style and with the new approach used to create the function 
-// definition to simplify the code compilation
 
-bool xeb_compiler_variable_definition(line_slice* ctx,variable_definition* vd, code_section* cd){
+#define xeb_missing_semicolon(buffer, cat_string, errors)\
+    buffer = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);\
+    cat_string = (char*)arena_alloc(&compiler_ah, sizeof(char)*12);\
+    strcpy(buffer, "This is an incomplete declaration, you must conclude it with ");\
+    sprintf(cat_string, "'%s', ", token_table_lh[LXR_SEMICOLON]);\
+    strcat(buffer,cat_string);\
+    strcat(buffer, "try adding it to proceed\n");\
+    XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(XEB_ERROR_WRONG_SYNTAX, buffer);\
+    *errors = true;
+
+
+
+bool xeb_compiler_variable_definition(line_slice* ctx){
+  code_section* cd = xeb_code_section_get();
+  if(cd == NULL) return false;
+
   bool errors = false;
+  variable_definition* vd = NULL;
   if(lxer_type_expect_statement(&compiler.lh)){
     vd = (variable_definition*)arena_alloc(&compiler_ah, sizeof(variable_definition));
     vd->type = XEB_GET_CURRENT_TOKEN();
@@ -185,12 +204,7 @@ bool xeb_compiler_variable_definition(line_slice* ctx,variable_definition* vd, c
           xeb_variable_definition_push(vd, cd); 
           break;
         case TOKEN_TABLE_END:
-          strcpy(buffer, "This is an incomplete declaration, you must conclude it with ");
-          sprintf(cat_string, "'%s', ", token_table_lh[LXR_SEMICOLON]);
-          strcat(buffer,cat_string);
-          strcat(buffer, "try adding it to proceed\n");
-          XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(XEB_ERROR_WRONG_SYNTAX, buffer);
-          errors = true;
+          xeb_missing_semicolon(buffer, cat_string, &errors);
           break;
         case LXR_ASSIGNMENT:
           NOTY("Xeb todo", "Implement inline assignment after declaration", NULL);
@@ -215,7 +229,8 @@ bool xeb_compiler_variable_definition(line_slice* ctx,variable_definition* vd, c
 // of "yo_mom" it must return an emptry string and then report an error, but the reporting part is already 
 // done by the function dedicated to the compilation process
 
-bool xeb_compiler_function_definition(line_slice* ctx, function_definition* fn_def, variable_definition* vd){
+bool xeb_compiler_function_definition(line_slice* ctx){
+  function_definition* fn_def;
   char* fn_name = lxer_get_rh(&compiler.lh, false);
   bool parameter_error = false, return_error = false;
   fn_def = (function_definition*)arena_alloc(&compiler_ah, sizeof(function_definition));
@@ -228,7 +243,7 @@ bool xeb_compiler_function_definition(line_slice* ctx, function_definition* fn_d
     XEB_PUSH_ERROR(XEB_ERROR_WRONG_FUNCTION_DEFINITION, LXR_OPEN_BRK, XEB_GET_CURRENT_TOKEN()); 
   }else{
     XEB_NEXT_TOKEN(); 
-    parameter_error = xeb_handle_parameter(ctx,fn_def, vd);
+    parameter_error = xeb_handle_parameter(ctx,fn_def);
     XEB_NEXT_TOKEN();
     return_error = xeb_handle_return_type(ctx, fn_def);
   }
@@ -292,9 +307,10 @@ bool xeb_handle_return_type(line_slice*ctx, function_definition* fn_def){
   return errors;
 }
 
-bool xeb_handle_parameter(line_slice*ctx, function_definition* fn_def, variable_definition* vd){
+bool xeb_handle_parameter(line_slice*ctx, function_definition* fn_def){
   LXR_TOKENS parameter_type;
   bool errors = false;
+  variable_definition* vd = NULL;
   if(lxer_brk_expect_brk(&compiler.lh)){
     XEB_NEXT_TOKEN();
     if(XEB_GET_CURRENT_TOKEN() != LXR_CLOSE_BRK){
@@ -357,6 +373,61 @@ bool xeb_handle_parameter(line_slice*ctx, function_definition* fn_def, variable_
   }
   return errors;
 }
+
+
+// TODO: complete the return statement 
+
+bool xeb_compiler_return_inst(line_slice* ctx){
+  code_section* cd = xeb_code_section_get();
+  if(cd == NULL || cd->fn == NULL) return false;
+  function_definition* fn_def = cd->fn;
+
+  bool errors = false;
+  char* buffer = NULL;
+  char* cat_string = NULL;
+  instruction_list* il = (instruction_list*)arena_alloc(&compiler_ah, sizeof(instruction_list));
+  return_inst_type* rit = (return_inst_type*)arena_alloc(&compiler_ah, sizeof(return_inst_type));
+  XEB_NEXT_TOKEN();
+  if(XEB_GET_CURRENT_TOKEN() == LXR_OPEN_BRK){
+    char* content = lxer_get_rh(&compiler.lh, false);
+    if(lxer_brk_expect_brk(&compiler.lh) && strlen(content) < 1){
+      // No return content
+      XEB_NEXT_TOKEN();
+      if(XEB_GET_CURRENT_TOKEN() == LXR_CLOSE_BRK && lxer_brk_expect_sep(&compiler.lh)){
+        XEB_NEXT_TOKEN();
+        if(XEB_GET_CURRENT_TOKEN() != LXR_SEMICOLON){
+          xeb_missing_semicolon(buffer, cat_string, &errors);
+        }else{
+          if(fn_def->return_type_tracker == 0){
+            rit->variable_reference = NULL;
+            rit->variable_reference_len = 0;
+            rit->variable_reference_tracker = 0;
+            rit->inline_static_strings = NULL;
+            il->type = RETURN;
+            il->inst = rit;
+          }else{
+            XEB_PUSH_ERROR_CUSTOM_MESSAGE(XEB_MISMATCHING_RETURN_TYPE_OR_NUMBER, "The return type or return variable number is not equal to the function definition given");
+            errors = true;
+          }
+        }
+      }else{
+        errors = true;
+      }
+    }else{
+      // TODO: one or multiple return found, this has to be handled like in the function argument processing 
+    }
+  }else{
+    XEB_PUSH_ERROR(XEB_ERROR_WRONG_SYNTAX, LXR_OPEN_BRK, XEB_GET_CURRENT_TOKEN());
+    errors = true;
+  }
+
+
+  if(!errors){
+    // TODO: push return insturction
+  }
+  return !errors;
+}
+
 
 // Internal table pushing function
 

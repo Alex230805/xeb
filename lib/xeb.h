@@ -88,7 +88,9 @@
   X(XEB_ERROR_MISSING_COMMA_SEPARATOR)\
   X(XEB_ERROR_MISSING_RETURN_TYPE)\
   X(XEB_ERROR_MISSING_TYPE)\
-  X(XEB_ERROR_FUNCTION_SCOPE_NOT_CLOSED_CORRECTLY)
+  X(XEB_ERROR_FUNCTION_SCOPE_NOT_CLOSED_CORRECTLY)\
+  X(XEB_MISMATCHING_RETURN_TYPE_OR_NUMBER)
+
 
 #define X(name) name,
 
@@ -101,7 +103,7 @@ typedef enum{
 
 typedef enum {NO_SKIP, SINGLE_SKIP, START_LONG_SKIP, END_LONG_SKIP } XEB_SKIP;
 typedef enum {NO_FN, FN_OPEN}XEB_FN_STATUS;
-typedef enum {IF, SWITCH, ASSIGN}XEB_INST_TYPE;
+typedef enum {IF, SWITCH, ASSIGN, RETURN} XEB_INST_TYPE;
 
 
 typedef struct{
@@ -163,7 +165,12 @@ typedef struct{
   void* inst;
 }instruction_list;
 
-
+typedef struct{
+  size_t* variable_reference;
+  size_t variable_reference_len;
+  size_t variable_reference_tracker;
+  char* inline_static_strings;
+}return_inst_type;
 
 typedef struct{
   function_definition* fn;
@@ -299,10 +306,15 @@ variable_definition* xeb_variable_definition_get(char*name, code_section* cd);
 
 // compiler functions related to parsing and creating the intermediate memory-like reperesentation
 
-bool xeb_compiler_function_definition(line_slice *ctx,function_definition* fn_def, variable_definition* vd);
-bool xeb_handle_parameter(line_slice* ctx, function_definition* fn_def, variable_definition* vd);
+bool xeb_compiler_function_definition(line_slice *ctx);
+bool xeb_handle_parameter(line_slice* ctx, function_definition* fn_def);
 bool xeb_handle_return_type(line_slice*ctx, function_definition* fn_def);
-bool xeb_compiler_variable_definition(line_slice *ctx, variable_definition* vd, code_section* cd);
+
+
+bool xeb_compiler_variable_definition(line_slice *ctx);
+bool xeb_compiler_return_inst(line_slice* ctx);
+
+
 
 bool xeb_line_is_empty(size_t line_number);
 void xeb_validate_line_status();
