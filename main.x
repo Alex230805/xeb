@@ -1,6 +1,9 @@
 
 -/
 
+
+
+
   Testing comment section, the compiler will identify the open section and will eclude this 
   few lines from the compilation process to avoid possible misbehaving like defining a function 
   inside this scope like this:

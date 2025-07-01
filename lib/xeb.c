@@ -29,15 +29,14 @@ void xeb_start_compiler(char*module_path){
 
   XEB_SKIP comment_skip_status = NO_SKIP; 
 
-  size_t local_line_tracker = 0;
-  line_slice* ctx = NULL;
+  compiler.local_line_tracker = 0;
+  compiler.ctx = &compiler.source_lines[compiler.local_line_tracker];
+
   LXR_TOKENS token = 0;
   XEB_FN_STATUS function_scope = NO_FN;
-  
   XEB_NOTY("XEB Compiler","Compilation process started\n", NULL);
-  for(local_line_tracker = 0; local_line_tracker < compiler.loaded_slice; local_line_tracker++){
-    if(compiler.source_lines[local_line_tracker].has_tokens){
-      ctx = &compiler.source_lines[local_line_tracker];
+  while(compiler.local_line_tracker < compiler.loaded_slice){
+    if(compiler.ctx->has_tokens){
       bool valid_token = true;
       while(valid_token && comment_skip_status != SINGLE_SKIP){
         token = XEB_GET_CURRENT_TOKEN();
@@ -57,33 +56,32 @@ void xeb_start_compiler(char*module_path){
             default: break;
           }
           if(comment_skip_status == NO_SKIP){
-            xeb_compile_expression(ctx, token, &function_scope);
+            xeb_compile_expression(token, &function_scope);
           }
           if(comment_skip_status == END_LONG_SKIP) comment_skip_status = NO_SKIP; 
         }
         valid_token = XEB_NEXT_TOKEN();
       }
-    }else if(!xeb_line_is_empty(local_line_tracker)){
-      XEB_PUSH_ERROR_CUSTOM_LINE(XEB_ERROR_WRONG_SYNTAX,local_line_tracker);
+    }else if(!xeb_line_is_empty(compiler.local_line_tracker)){
+      XEB_PUSH_ERROR_CUSTOM_LINE(XEB_ERROR_WRONG_SYNTAX,compiler.local_line_tracker);
     }
+    xeb_switch_context();
     if(comment_skip_status == SINGLE_SKIP) comment_skip_status = NO_SKIP;
-
   }
   return;
 }
-
 
 // TODO: insert final validator after general parsing 
 //
 
 
 
-void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* function_scope){
+void xeb_compile_expression(LXR_TOKENS token, XEB_FN_STATUS* function_scope){
   code_section* cd = NULL;
   switch(token){
     case LXR_FN:
       if(*function_scope == NO_FN){
-        bool definition_status = xeb_compiler_function_definition(ctx);
+        bool definition_status = xeb_compiler_function_definition();
         XEB_NEXT_TOKEN();
         if(XEB_GET_CURRENT_TOKEN() == LXR_OPEN_CRL_BRK && definition_status){
           *function_scope = FN_OPEN;
@@ -110,7 +108,7 @@ void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* fu
     case LXR_RET_STATEMENT:
           if(*function_scope == FN_OPEN){
             cd = xeb_code_section_get();
-            bool return_status = xeb_compiler_return_inst(ctx);
+            bool return_status = xeb_compiler_return_inst();
             if(return_status){
               // TODO: code here to complete the return instruction 
             }else{
@@ -144,7 +142,7 @@ void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* fu
     case LXR_POINTER_TYPE:
     case LXR_VOID_TYPE:         
       if(*function_scope == FN_OPEN){
-        bool variable_definition_status = xeb_compiler_variable_definition(ctx);
+        bool variable_definition_status = xeb_compiler_variable_definition();
         if(!variable_definition_status){
           XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(XEB_NOT_A_VALID_VARIABLE_DEFINIPTION, "This is not a valid variable definition, try to follow the documentation");
         }
@@ -178,7 +176,7 @@ void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* fu
 
 
 
-bool xeb_compiler_variable_definition(line_slice* ctx){
+bool xeb_compiler_variable_definition(){
   code_section* cd = xeb_code_section_get();
   if(cd == NULL) return false;
 
@@ -229,7 +227,7 @@ bool xeb_compiler_variable_definition(line_slice* ctx){
 // of "yo_mom" it must return an emptry string and then report an error, but the reporting part is already 
 // done by the function dedicated to the compilation process
 
-bool xeb_compiler_function_definition(line_slice* ctx){
+bool xeb_compiler_function_definition(){
   function_definition* fn_def;
   char* fn_name = lxer_get_rh(&compiler.lh, false);
   bool parameter_error = false, return_error = false;
@@ -243,9 +241,9 @@ bool xeb_compiler_function_definition(line_slice* ctx){
     XEB_PUSH_ERROR(XEB_ERROR_WRONG_FUNCTION_DEFINITION, LXR_OPEN_BRK, XEB_GET_CURRENT_TOKEN()); 
   }else{
     XEB_NEXT_TOKEN(); 
-    parameter_error = xeb_handle_parameter(ctx,fn_def);
+    parameter_error = xeb_handle_parameter(fn_def);
     XEB_NEXT_TOKEN();
-    return_error = xeb_handle_return_type(ctx, fn_def);
+    return_error = xeb_handle_return_type(fn_def);
   }
   if(parameter_error | return_error) {
     fn_def->definition_status = INCOMPLETE;
@@ -256,7 +254,7 @@ bool xeb_compiler_function_definition(line_slice* ctx){
   return !(parameter_error | return_error);
 }
 
-bool xeb_handle_return_type(line_slice*ctx, function_definition* fn_def){
+bool xeb_handle_return_type(function_definition* fn_def){
   bool errors = false;
   LXR_TOKENS return_token = 0;
   XEB_NEXT_TOKEN();
@@ -307,7 +305,7 @@ bool xeb_handle_return_type(line_slice*ctx, function_definition* fn_def){
   return errors;
 }
 
-bool xeb_handle_parameter(line_slice*ctx, function_definition* fn_def){
+bool xeb_handle_parameter(function_definition* fn_def){
   LXR_TOKENS parameter_type;
   bool errors = false;
   variable_definition* vd = NULL;
@@ -377,7 +375,7 @@ bool xeb_handle_parameter(line_slice*ctx, function_definition* fn_def){
 
 // TODO: complete the return statement 
 
-bool xeb_compiler_return_inst(line_slice* ctx){
+bool xeb_compiler_return_inst(){
   code_section* cd = xeb_code_section_get();
   if(cd == NULL || cd->fn == NULL) return false;
   function_definition* fn_def = cd->fn;
@@ -757,8 +755,17 @@ function_definition* xeb_function_definition_get(){
 
 
 
+void xeb_switch_context(){
+  if(compiler.local_line_tracker < compiler.loaded_slice){
+    compiler.ctx = &compiler.source_lines[compiler.local_line_tracker+1];
+    compiler.local_line_tracker += 1;
+  }
+}
+
+
 LXR_TOKENS xeb_get_current_token(line_slice* ctx){
   if(ctx->local_tokens_rp == ctx->local_tokens_tracker){
+    xeb_switch_context();
     return TOKEN_TABLE_END;
   }
   return ctx->local_tokens[ctx->local_tokens_rp];

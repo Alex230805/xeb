@@ -48,13 +48,13 @@
   xeb_error_push_error(errno, lxer_get_current_pointer(&compiler.lh), xeb_error_get_line_pointer(lxer_get_current_pointer(&compiler.lh)), xeb_error_get_line(lxer_get_current_pointer(&compiler.lh)), false, TOKEN_TABLE_END, TOKEN_TABLE_END, string);
 
 #define XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(errno, string)\
-  xeb_error_push_error(errno, ctx->pointer, ctx->pointer, ctx->line,false, TOKEN_TABLE_END, TOKEN_TABLE_END,string);
+  xeb_error_push_error(errno, compiler.ctx->pointer, compiler.ctx->pointer, compiler.ctx->line,false, TOKEN_TABLE_END, TOKEN_TABLE_END,string);
 
 #define XEB_NEXT_TOKEN()\
-  xeb_next_token(ctx)
+  xeb_next_token(compiler.ctx)
 
 #define XEB_GET_CURRENT_TOKEN()\
-  xeb_get_current_token(ctx)
+  xeb_get_current_token(compiler.ctx)
 
 
 // internal error messag, used as error reporting tag to return errors before the compilation fully begins
@@ -199,14 +199,14 @@ typedef struct{
   line_slice* source_lines;
   size_t source_lines_len;
   size_t loaded_slice;
+  size_t local_line_tracker;
 
   // compiler error array, return error after the compilation
   xeb_error_box** final_error_report;
   size_t error_report_len;
   size_t error_tracker;
-
+  line_slice* ctx;
 }xebc;
-
 
 
 static xebc compiler = {0};
@@ -225,7 +225,6 @@ static u8* data_section = {0};
 static size_t data_section_len = 0;
 static size_t data_section_tracker = 0; 
 static bool entry_point_present = false;
-
 
 /* Current compilation structure
 *
@@ -306,22 +305,23 @@ variable_definition* xeb_variable_definition_get(char*name, code_section* cd);
 
 // compiler functions related to parsing and creating the intermediate memory-like reperesentation
 
-bool xeb_compiler_function_definition(line_slice *ctx);
-bool xeb_handle_parameter(line_slice* ctx, function_definition* fn_def);
-bool xeb_handle_return_type(line_slice*ctx, function_definition* fn_def);
+bool xeb_compiler_function_definition();
+bool xeb_handle_parameter(function_definition* fn_def);
+bool xeb_handle_return_type(function_definition* fn_def);
 
 
-bool xeb_compiler_variable_definition(line_slice *ctx);
-bool xeb_compiler_return_inst(line_slice* ctx);
+bool xeb_compiler_variable_definition();
+bool xeb_compiler_return_inst();
 
 
+void xeb_compile_expression(LXR_TOKENS token, XEB_FN_STATUS* function_scope);
 
 bool xeb_line_is_empty(size_t line_number);
 void xeb_validate_line_status();
 
 LXR_TOKENS xeb_get_current_token(line_slice* ctx);
 bool xeb_next_token(line_slice* ctx);
-void xeb_compile_expression(line_slice* ctx, LXR_TOKENS token, XEB_FN_STATUS* function_scope);
+void xeb_switch_context();
 
 // compiler usage functions 
 
