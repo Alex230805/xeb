@@ -130,7 +130,7 @@ typedef struct{
   size_t  source_len;
   size_t  lxer_tracker;
 
-  token_slice** stream_out;
+  token_slice* stream_out;
   size_t       stream_out_len;
   Arena_header lxer_ah;
 }lxer_head;
@@ -272,7 +272,7 @@ bool lxer_misc_expect_misc(lxer_head*lh);
 
 char*   lxer_get_rh(lxer_head*lh, bool reverse);
 char**  lxer_get_rh_lh(lxer_head*lh);
-
+char* lxer_get_rh_in_between(lxer_head* lh, size_t tracker_lh, size_t tracker_rh);
 
 #ifndef LXER_IMPLEMENTATION
 #define LXER_IMPLEMENTATION

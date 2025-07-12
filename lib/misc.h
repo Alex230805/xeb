@@ -81,19 +81,19 @@ typedef struct{
 
 
 #define dapush(arena, arr, tracker, size, cast, obj)\
-  arr[*tracker] = obj;\
-  *tracker += 1;\
-  if(*tracker == *size){\
-    size_t new_size = *size*2;\
-    cast* new_arr = (cast*)arena_alloc(arena, sizeof(cast)*new_size);\
-    for(size_t dapush_tracker=0;dapush_tracker<*size;dapush_tracker++){\
-      new_arr[dapush_tracker] = arr[dapush_tracker];\
+  do{\
+    arr[*tracker] = obj;\
+    *tracker += 1;\
+    if(*tracker == *size){\
+      size_t new_size = *size*2;\
+      cast* new_arr = (cast*)arena_alloc(arena, sizeof(cast)*new_size);\
+      for(size_t dapush_tracker=0;dapush_tracker<*size;dapush_tracker++){\
+        new_arr[dapush_tracker] = arr[dapush_tracker];\
+      }\
+      arr = new_arr;\
+      *size = new_size;\
     }\
-    arr = new_arr;\
-    *size = new_size;\
-  }
-
-
+  }while(0);
 
 
 #ifdef GC_IMP
