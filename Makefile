@@ -6,9 +6,12 @@ COMP=clang
 main: ./main.c xeb
 	$(COMP) $(FLAG) $(INCLUDE_DIR) $(LIB_DIR) ./main.c -o xebc -lXeb
 
-xeb: cbox lxer ./lib/xeb.c ./lib/xeb.h 
+xeb: xeb_inst cbox lxer ./lib/xeb.c ./lib/xeb.h 
 	$(COMP) $(FLAG) $(INCLUDE_DIR) -c -o bin/xeb.o ./lib/xeb.c
 	ar rc ./bin/libXeb.a ./bin/*.o
+
+xeb_inst: ./lib/xeb_inst.c ./lib/xeb_inst.h 
+	$(COMP) $(FLAG) $(INCLUDE_DIR) -c -o bin/xeb_inst.o $<
 
 lxer: ./lib/lxer.c ./lib/lxer.h
 	$(COMP) $(FLAG) $(INCLUDE_DIR) -c -o bin/lxer.o ./lib/lxer.c

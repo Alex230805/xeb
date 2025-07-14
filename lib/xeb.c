@@ -81,7 +81,7 @@ void xeb_compile_expression(LXR_TOKENS token, XEB_FN_STATUS* function_scope){
   switch(token){
     case LXR_FN:
       if(*function_scope == NO_FN){
-        bool definition_status = xeb_compiler_function_definition();
+        bool definition_status = xeb_function_parse_definition();
         XEB_NEXT_TOKEN();
         if(XEB_GET_CURRENT_TOKEN() == LXR_OPEN_CRL_BRK && definition_status){
           *function_scope = FN_OPEN;
@@ -163,19 +163,6 @@ void xeb_compile_expression(LXR_TOKENS token, XEB_FN_STATUS* function_scope){
 }
 
 
-
-#define xeb_missing_semicolon(buffer, cat_string, errors)\
-    buffer = (char*)arena_alloc(&compiler_ah, sizeof(char)*256);\
-    cat_string = (char*)arena_alloc(&compiler_ah, sizeof(char)*12);\
-    strcpy(buffer, "This is an incomplete declaration, you must conclude it with ");\
-    sprintf(cat_string, "'%s', ", token_table_lh[LXR_SEMICOLON]);\
-    strcat(buffer,cat_string);\
-    strcat(buffer, "try adding it to proceed\n");\
-    XEB_PUSH_CTX_ERROR_CUSTOM_MESSAGE(XEB_ERROR_WRONG_SYNTAX, buffer);\
-    *errors = true;
-
-
-
 bool xeb_compiler_variable_definition(){
   code_section* cd = xeb_code_section_get();
   if(cd == NULL) return false;
@@ -222,12 +209,7 @@ bool xeb_compiler_variable_definition(){
   return !errors;
 }
 
-// TODO: reconfigure the lxer_get_rh() to identify strings with space and return a empty string 
-// if a name between two tokens has a space, for instance if a function is declared as "yo mom" instead 
-// of "yo_mom" it must return an emptry string and then report an error, but the reporting part is already 
-// done by the function dedicated to the compilation process
-
-bool xeb_compiler_function_definition(){
+bool xeb_function_parse_definition(){
   function_definition* fn_def;
   char* fn_name = lxer_get_rh(&compiler.lh, false);
   bool parameter_error = false, return_error = false;
@@ -241,9 +223,9 @@ bool xeb_compiler_function_definition(){
     XEB_PUSH_ERROR(XEB_ERROR_WRONG_FUNCTION_DEFINITION, LXR_OPEN_BRK, XEB_GET_CURRENT_TOKEN()); 
   }else{
     XEB_NEXT_TOKEN(); 
-    parameter_error = xeb_handle_parameter(fn_def);
+    parameter_error = xeb_function_handle_parameter(fn_def);
     XEB_NEXT_TOKEN();
-    return_error = xeb_handle_return_type(fn_def);
+    return_error = xeb_function_handle_return_type(fn_def);
   }
   if(parameter_error | return_error) {
     fn_def->definition_status = INCOMPLETE;
@@ -254,7 +236,7 @@ bool xeb_compiler_function_definition(){
   return !(parameter_error | return_error);
 }
 
-bool xeb_handle_return_type(function_definition* fn_def){
+bool xeb_function_handle_return_type(function_definition* fn_def){
   bool errors = false;
   LXR_TOKENS return_token = 0;
   XEB_NEXT_TOKEN();
@@ -305,7 +287,7 @@ bool xeb_handle_return_type(function_definition* fn_def){
   return errors;
 }
 
-bool xeb_handle_parameter(function_definition* fn_def){
+bool xeb_function_handle_parameter(function_definition* fn_def){
   LXR_TOKENS parameter_type;
   bool errors = false;
   variable_definition* vd = NULL;
@@ -370,60 +352,6 @@ bool xeb_handle_parameter(function_definition* fn_def){
     errors = true;
   }
   return errors;
-}
-
-
-// TODO: complete the return statement 
-
-bool xeb_compiler_return_inst(){
-  code_section* cd = xeb_code_section_get();
-  if(cd == NULL || cd->fn == NULL) return false;
-  function_definition* fn_def = cd->fn;
-
-  bool errors = false;
-  char* buffer = NULL;
-  char* cat_string = NULL;
-  instruction_list* il = (instruction_list*)arena_alloc(&compiler_ah, sizeof(instruction_list));
-  return_inst_type* rit = (return_inst_type*)arena_alloc(&compiler_ah, sizeof(return_inst_type));
-  XEB_NEXT_TOKEN();
-  if(XEB_GET_CURRENT_TOKEN() == LXR_OPEN_BRK){
-    char* content = lxer_get_rh(&compiler.lh, false);
-    if(lxer_brk_expect_brk(&compiler.lh) && strlen(content) < 1){
-      // No return content
-      XEB_NEXT_TOKEN();
-      if(XEB_GET_CURRENT_TOKEN() == LXR_CLOSE_BRK && lxer_brk_expect_sep(&compiler.lh)){
-        XEB_NEXT_TOKEN();
-        if(XEB_GET_CURRENT_TOKEN() != LXR_SEMICOLON){
-          xeb_missing_semicolon(buffer, cat_string, &errors);
-        }else{
-          if(fn_def->return_type_tracker == 0){
-            rit->variable_reference = NULL;
-            rit->variable_reference_len = 0;
-            rit->variable_reference_tracker = 0;
-            rit->inline_static_strings = NULL;
-            il->type = RETURN;
-            il->inst = rit;
-          }else{
-            XEB_PUSH_ERROR_CUSTOM_MESSAGE(XEB_MISMATCHING_RETURN_TYPE_OR_NUMBER, "The return type or return variable number is not equal to the function definition given");
-            errors = true;
-          }
-        }
-      }else{
-        errors = true;
-      }
-    }else{
-      // TODO: one or multiple return found, this has to be handled like in the function argument processing 
-    }
-  }else{
-    XEB_PUSH_ERROR(XEB_ERROR_WRONG_SYNTAX, LXR_OPEN_BRK, XEB_GET_CURRENT_TOKEN());
-    errors = true;
-  }
-
-
-  if(!errors){
-    // TODO: push return insturction
-  }
-  return !errors;
 }
 
 
