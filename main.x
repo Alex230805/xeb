@@ -21,7 +21,6 @@
 
 
 fn main(str: name, str: surname, int: date) -> (str,str,int,double) {
-
 }
 
 fn yo_mom(str: name, double: weight) -> str {
@@ -29,6 +28,5 @@ fn yo_mom(str: name, double: weight) -> str {
 
   -- str:res = "obese indeed";
   -- ret(res);
-
 }
 
